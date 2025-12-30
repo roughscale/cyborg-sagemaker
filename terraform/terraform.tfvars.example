@@ -1,0 +1,98 @@
+# Example Terraform Variables Configuration
+#
+# Copy this file to terraform.tfvars and customize for your environment:
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# Note: terraform.tfvars is gitignored to prevent committing secrets
+
+# ============================================================================
+# Core Configuration
+# ============================================================================
+
+project_name = "cyborg-rl"
+aws_region   = "us-east-1"
+environment  = "research"
+
+# ============================================================================
+# Infrastructure Configuration
+# ============================================================================
+
+# Set to true to create VPC infrastructure for AWS emulation mode
+# This is required if you want to run training/evaluation in AWS emulation
+# mode where actual EC2 instances are provisioned and attacked
+enable_aws_emulation = false
+
+# VPC configuration (only used if enable_aws_emulation = true)
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# ============================================================================
+# Git Repository Configuration
+# ============================================================================
+
+# CodeBuild will clone these repositories to build Docker images
+# Update these URLs to point to your Git repositories
+
+# cyborg-sagemaker repository (contains Docker files, training code, Terraform)
+git_repository_url = "https://github.com/roughscale/cyborg-sagemaker"
+git_branch         = "main"
+
+# CybORG repository (contains CybORG source code)
+cyborg_repository_url = "https://github.com/roughscale/cyborg"
+cyborg_branch         = "main"
+
+# ============================================================================
+# Docker Image Configuration
+# ============================================================================
+
+# Tag for Docker images in ECR
+# Typically set to "latest" for development, or a git commit hash for production
+docker_image_tag = "latest"
+
+# ============================================================================
+# Common Tags
+# ============================================================================
+
+tags = {
+  Project   = "CybORG-RL"
+  ManagedBy = "Terraform"
+}
+
+# ============================================================================
+# Usage Examples
+# ============================================================================
+
+# Example 1: Initial Infrastructure Setup
+# ----------------------------------------
+# 1. Configure git_repository_url and cyborg_repository_url above
+# 2. Run:
+#      terraform init
+#      terraform apply
+#
+# This creates ECR, S3, IAM roles, CodeBuild project
+#
+# 3. Build Docker images:
+#      ./scripts/build_images.sh --follow
+#
+# 4. Upload configs to S3:
+#      ./scripts/upload_configs.sh
+#
+# 5. Launch training job:
+#      python scripts/launch_training.py --algorithm drqn --total-steps 750000
+
+# Example 2: AWS Emulation Mode
+# ------------------------------
+# To enable AWS emulation mode:
+#   1. Set enable_aws_emulation = true
+#   2. Configure vpc_cidr and availability_zones
+#   3. terraform apply
+#
+# This creates VPC infrastructure for AWS emulation training
+
+# Example 3: Build with Specific Branches
+# ----------------------------------------
+# Build Docker images from specific Git branches:
+#   ./scripts/build_images.sh \
+#     --git-branch feature/new-algo \
+#     --cyborg-branch develop \
+#     --sb3-branch abc123def

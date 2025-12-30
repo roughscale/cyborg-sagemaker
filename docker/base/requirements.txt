@@ -1,0 +1,29 @@
+# Core dependencies
+gymnasium==0.29.1
+gym==0.26.2  # Legacy gym for CybORG compatibility
+numpy==1.23.3
+
+# AWS and S3
+boto3==1.13.3
+botocore==1.16.3
+
+# SSH and networking
+paramiko==2.6.0
+networkx
+
+# Configuration
+PyYAML>=6.0
+
+# Logging and monitoring
+tensorboard
+
+# Utilities
+cloudpickle
+shimmy==0.2.1
+prettytable==0.7.2
+
+# Visualization
+matplotlib>=3.5
+
+# Message queue (for AWS emulation)
+pika==1.1.0

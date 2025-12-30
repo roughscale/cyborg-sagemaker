@@ -1,0 +1,56 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Tests
+tests/
+*.log
+
+# Terraform
+terraform/
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+
+# Large files to exclude from CybORG
+cyborg/CybORG/exports/
+cyborg/CybORG/runs/
+cyborg/CybORG/*.log
+cyborg/CybORG/**/*.log
+cyborg/CybORG/.git/
+
+# Stable-baselines3 (we clone it in Docker)
+stable-baselines3/
+stable-baselines3-contrib/
