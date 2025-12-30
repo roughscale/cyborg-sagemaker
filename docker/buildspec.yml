@@ -9,10 +9,6 @@ env:
     ENVIRONMENT: "research"
     CYBORG_REPO: "https://github.com/roughscale/cyborg.git"
     CYBORG_BRANCH: "main"
-  parameter-store:
-    # Optional: Store repo URLs/branches in Parameter Store for easy updates
-    # SB3_REPO: /cyborg/sb3/repo
-    # SB3_BRANCH: /cyborg/sb3/branch
   exported-variables:
     - IMAGE_TAG
     - ENVIRONMENT
