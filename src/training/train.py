@@ -240,7 +240,7 @@ def main():
         Algorithms.DRQN: train_drqn,
         Algorithms.DQN: train_dqn,
         Algorithms.RECURRENT_PPO: train_recurrent_ppo,
-        # Algorithms.PPO: train_ppo,
+        Algorithms.PPO: train_ppo,
     }
 
     if args.algorithm not in algorithm_trainers:

@@ -137,7 +137,7 @@ def train_drqn(env, args, callbacks: List[BaseCallback]) -> Any:
         exploration_fraction=args.exploration_fraction,
         exploration_initial_eps=args.initial_epsilon,
         exploration_final_eps=args.final_epsilon,
-        max_grad_norm=10,
+        max_grad_norm=10,  # Gradient clipping
         tensorboard_log="/opt/ml/output/tensorboard",
         policy_kwargs={"net_arch": net_arch},
         verbose=1,

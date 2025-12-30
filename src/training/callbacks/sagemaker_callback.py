@@ -87,6 +87,9 @@ class SageMakerCallback(BaseCallback):
                             f"reward={reward:.2f}, length={length}"
                         )
 
+        # Emit algorithm-specific metrics
+        self._emit_algorithm_metrics()
+
         # Log progress periodically
         if self.num_timesteps % 10000 == 0 and self.verbose >= 1:
             self._log_progress()

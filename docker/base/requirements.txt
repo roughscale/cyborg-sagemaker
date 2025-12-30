@@ -22,8 +22,25 @@ shimmy==0.2.1
 boto3==1.13.3
 botocore==1.16.3
 
+# SSH and networking
+paramiko==2.6.0
+networkx
+
+# Configuration
+PyYAML>=6.0
+
+# Logging and monitoring
+tensorboard
+
+# Utilities
+cloudpickle
+shimmy==0.2.1
+prettytable==0.7.2
+
+# Visualization
+matplotlib>=3.5
+
 # Message queue (for AWS emulation)
 pika==1.1.0
-
 # Metasploit integration (for AWS emulation)
 pymetasploit3

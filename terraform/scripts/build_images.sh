@@ -20,7 +20,6 @@ GIT_BRANCH=""
 FOLLOW_LOGS=false
 BUILD_BASE=true
 BUILD_TRAINING=true
-BUILD_EVALUATION=true
 
 # Print usage
 usage() {

@@ -1,5 +1,8 @@
 version: 0.2
 
+# CodeBuild buildspec for building CybORG Docker images
+# Clones both CybORG and cyborg-sagemaker repositories, builds images, and pushes to ECR
+
 env:
   variables:
     IMAGE_TAG: "latest"
@@ -9,6 +12,10 @@ env:
     BUILD_BASE: "true"
     BUILD_TRAINING: "true"
     BUILD_EVALUATION: "true"
+  parameter-store:
+    # Optional: Store repo URLs/branches in Parameter Store for easy updates
+    # SB3_REPO: /cyborg/sb3/repo
+    # SB3_BRANCH: /cyborg/sb3/branch
   exported-variables:
     - IMAGE_TAG
     - ENVIRONMENT
@@ -26,16 +33,19 @@ phases:
       - export ECR_BASE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cyborg-rl-$ENVIRONMENT
       - echo "ECR Base URI = $ECR_BASE_URI"
       - echo "Image Tag = $IMAGE_TAG"
+
       - echo "Preparing build workspace..."
-      - export BUILD_WORKSPACE=/tmp/build-workspace
-      - mkdir -p $BUILD_WORKSPACE
+      - BUILD_WORKSPACE=$(mktemp -d)
       - echo "Build workspace = $BUILD_WORKSPACE"
-      - echo "Copying cyborg-sagemaker source to workspace..."
-      - cp -r $CODEBUILD_SRC_DIR $BUILD_WORKSPACE/cyborg-sagemaker
-      - echo "Cloning CybORG repository from $CYBORG_REPO (branch $CYBORG_BRANCH)..."
+
+      - echo "Moving cyborg-sagemaker source to workspace..."
+      - mv $CODEBUILD_SRC_DIR $BUILD_WORKSPACE/cyborg-sagemaker
+
+      - echo "Cloning CybORG repository from $CYBORG_REPO (branch: $CYBORG_BRANCH)..."
       - git clone --depth 1 --branch $CYBORG_BRANCH $CYBORG_REPO $BUILD_WORKSPACE/cyborg
       - echo "CybORG repository cloned"
-      - echo "Workspace structure"
+
+      - echo "Workspace structure:"
       - ls -la $BUILD_WORKSPACE
       - cd $BUILD_WORKSPACE
 
