@@ -1,8 +1,5 @@
 version: 0.2
 
-# CodeBuild buildspec for building CybORG Docker images
-# Clones both CybORG and cyborg-sagemaker repositories, builds images, and pushes to ECR
-
 env:
   variables:
     IMAGE_TAG: "latest"
@@ -31,10 +28,10 @@ phases:
       - echo "Build workspace = $BUILD_WORKSPACE"
       - echo "Moving cyborg-sagemaker source to workspace..."
       - mv $CODEBUILD_SRC_DIR $BUILD_WORKSPACE/cyborg-sagemaker
-      - echo "Cloning CybORG repository from $CYBORG_REPO (branch: $CYBORG_BRANCH)..."
+      - echo "Cloning CybORG repository from $CYBORG_REPO (branch $CYBORG_BRANCH)..."
       - git clone --depth 1 --branch $CYBORG_BRANCH $CYBORG_REPO $BUILD_WORKSPACE/cyborg
       - echo "CybORG repository cloned"
-      - echo "Workspace structure:"
+      - echo "Workspace structure"
       - ls -la $BUILD_WORKSPACE
       - cd $BUILD_WORKSPACE
 
