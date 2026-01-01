@@ -80,6 +80,7 @@ phases:
       - echo "Base = $ECR_BASE_URI/base:$IMAGE_TAG"
       - echo "Training = $ECR_BASE_URI/training:$IMAGE_TAG"
       - echo "Evaluation = $ECR_BASE_URI/evaluation:$IMAGE_TAG"
+      - cd /tmp
 
 artifacts:
   files:

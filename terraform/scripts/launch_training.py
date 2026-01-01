@@ -19,6 +19,7 @@ import json
 import os
 import subprocess
 import sys
+import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -44,6 +45,8 @@ METRIC_DEFINITIONS = {
     "drqn": [
         {"Name": "episode_reward", "Regex": r"episode_reward: ([0-9\.\-]+)"},
         {"Name": "episode_length", "Regex": r"episode_length: ([0-9]+)"},
+        {"Name": "episode_number", "Regex": r"episode_number: ([0-9]+)"},
+        {"Name": "total_timesteps", "Regex": r"total_timesteps: ([0-9]+)"},
         {"Name": "exploration_rate", "Regex": r"exploration_rate: ([0-9\.]+)"},
         {"Name": "loss", "Regex": r"loss: ([0-9\.]+)"},
         {"Name": "per_beta", "Regex": r"per_beta: ([0-9\.]+)"},
@@ -129,6 +132,23 @@ def check_s3_file_exists(s3_client, bucket: str, key: str) -> bool:
         return True
     except ClientError:
         return False
+
+
+def load_algorithm_config(algorithm: str, configs_dir: Path) -> Dict[str, Any]:
+    """Load algorithm configuration from YAML file"""
+    config_path = configs_dir / "algorithms" / f"{algorithm}.yaml"
+
+    if not config_path.exists():
+        log_warning(f"Algorithm config not found locally: {config_path}")
+        return {}
+
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        return config.get('hyperparameters', {})
+    except Exception as e:
+        log_warning(f"Could not load algorithm config: {e}")
+        return {}
 
 
 def generate_job_name(algorithm: str, prefix: str) -> str:
@@ -226,6 +246,7 @@ class SageMakerTrainingLauncher:
         seed: Optional[int],
         hyperparameters: Dict[str, str],
         environment_mode: str,
+        algorithm_config: Dict[str, Any],
         vpc_config: Optional[Dict[str, List[str]]] = None,
     ) -> Dict[str, Any]:
         """Build the SageMaker training job configuration"""
@@ -243,7 +264,14 @@ class SageMakerTrainingLauncher:
         if seed is not None:
             job_hyperparameters["seed"] = str(seed)
 
-        # Add custom hyperparameters
+        # Add algorithm hyperparameters from config (convert all to strings)
+        for key, value in algorithm_config.items():
+            if isinstance(value, bool):
+                job_hyperparameters[key] = str(value).lower()
+            elif value is not None:
+                job_hyperparameters[key] = str(value)
+
+        # Add custom hyperparameters (these override config defaults)
         job_hyperparameters.update(hyperparameters)
 
         # Build training job configuration
@@ -437,9 +465,13 @@ def main():
     # Get script directory
     script_dir = Path(__file__).parent
     terraform_dir = script_dir.parent
+    configs_dir = terraform_dir.parent / "configs"
 
     # Set scenario default
     scenario = args.scenario or f"{args.algorithm}_scenario.yaml"
+
+    # Load algorithm configuration
+    algorithm_config = load_algorithm_config(args.algorithm, configs_dir)
 
     # Parse custom hyperparameters
     hyperparameters = {}
@@ -515,6 +547,7 @@ def main():
         seed=args.seed,
         hyperparameters=hyperparameters,
         environment_mode=args.environment_mode,
+        algorithm_config=algorithm_config,
         vpc_config=vpc_config,
     )
 

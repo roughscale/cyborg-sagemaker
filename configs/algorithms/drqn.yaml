@@ -32,6 +32,7 @@ hyperparameters:
 
   # DRQN-specific parameters
   num_prev_seq: 40  # Number of previous transitions in sequence
+  use_full_episodes: true  # Use full episode sequences for training
   double: true      # Use Double DQN to prevent Q-value overestimation
   dueling: true     # Use Dueling architecture (separate V and A streams)
 
