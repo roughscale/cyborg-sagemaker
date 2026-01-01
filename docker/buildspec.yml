@@ -27,6 +27,7 @@ phases:
       - BUILD_WORKSPACE=$(mktemp -d)
       - echo "Build workspace = $BUILD_WORKSPACE"
       - echo "Moving cyborg-sagemaker source to workspace..."
+      - cd /tmp
       - mv $CODEBUILD_SRC_DIR $BUILD_WORKSPACE/cyborg-sagemaker
       - echo "Cloning CybORG repository from $CYBORG_REPO (branch $CYBORG_BRANCH)..."
       - git clone --depth 1 --branch $CYBORG_BRANCH $CYBORG_REPO $BUILD_WORKSPACE/cyborg

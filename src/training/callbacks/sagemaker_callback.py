@@ -97,18 +97,13 @@ class SageMakerCallback(BaseCallback):
         Different algorithms have different metrics to track:
         - DQN/DRQN: exploration_rate, loss, mean_q_value
         - PPO: policy_loss, value_loss, entropy_loss, approx_kl, clip_fraction
-        """
-        # Exploration rate (for DQN/DRQN)
-        if hasattr(self.model, 'exploration_rate'):
-            print(f"exploration_rate: {self.model.exploration_rate}")
 
+        Note: Exploration rate and loss logging removed to reduce verbosity.
+        These metrics are still available in TensorBoard and CloudWatch Metrics.
+        """
         # Training loss (from logger if available)
         if hasattr(self, 'logger') and self.logger is not None:
             name_to_value = getattr(self.logger, 'name_to_value', {})
-
-            # DQN/DRQN metrics
-            if 'train/loss' in name_to_value:
-                print(f"loss: {name_to_value['train/loss']}")
 
             # PPO metrics
             if 'train/policy_loss' in name_to_value:
@@ -121,10 +116,6 @@ class SageMakerCallback(BaseCallback):
                 print(f"approx_kl: {name_to_value['train/approx_kl']}")
             if 'train/clip_fraction' in name_to_value:
                 print(f"clip_fraction: {name_to_value['train/clip_fraction']}")
-
-            # PER beta (for DRQN with prioritized replay)
-            if 'replay_buffer/prioritized_replay_beta' in name_to_value:
-                print(f"per_beta: {name_to_value['replay_buffer/prioritized_replay_beta']}")
 
     def _log_progress(self) -> None:
         """Log training progress."""

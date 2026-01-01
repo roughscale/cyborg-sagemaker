@@ -31,7 +31,7 @@ hyperparameters:
   exploration_fraction: 0.9
 
   # DRQN-specific parameters
-  num_prev_seq: 20  # Number of previous transitions in sequence
+  num_prev_seq: 40  # Number of previous transitions in sequence
   double: true      # Use Double DQN to prevent Q-value overestimation
   dueling: true     # Use Dueling architecture (separate V and A streams)
 
