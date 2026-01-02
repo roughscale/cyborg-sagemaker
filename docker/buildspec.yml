@@ -27,8 +27,8 @@ phases:
       - export BUILD_WORKSPACE=/tmp/build-workspace
       - mkdir -p $BUILD_WORKSPACE
       - echo "Build workspace = $BUILD_WORKSPACE"
-      - echo "Moving cyborg-sagemaker source to workspace..."
-      - mv $CODEBUILD_SRC_DIR $BUILD_WORKSPACE/cyborg-sagemaker
+      - echo "Copying cyborg-sagemaker source to workspace..."
+      - cp -r $CODEBUILD_SRC_DIR $BUILD_WORKSPACE/cyborg-sagemaker
       - echo "Cloning CybORG repository from $CYBORG_REPO (branch $CYBORG_BRANCH)..."
       - git clone --depth 1 --branch $CYBORG_BRANCH $CYBORG_REPO $BUILD_WORKSPACE/cyborg
       - echo "CybORG repository cloned"
@@ -38,27 +38,35 @@ phases:
 
   build:
     commands:
-      - echo "Building base image..."
+      - echo "Building base image (dependencies only)..."
+      - |
+        docker build \
+          -t cyborg-rl-base:$IMAGE_TAG \
+          -f cyborg-sagemaker/docker/base/Dockerfile \
+          .
+      - echo "Base image built successfully"
+      - echo "Building training image (with code repositories)..."
       - |
         docker build \
           --build-arg SB3_REPO="$SB3_REPO" \
           --build-arg SB3_BRANCH="$SB3_BRANCH" \
           --build-arg SB3_CONTRIB_REPO="$SB3_CONTRIB_REPO" \
           --build-arg SB3_CONTRIB_BRANCH="$SB3_CONTRIB_BRANCH" \
-          -t cyborg-rl-base:$IMAGE_TAG \
-          -f cyborg-sagemaker/docker/base/Dockerfile \
-          .
-      - echo "Base image built successfully"
-      - echo "Building training image..."
-      - |
-        docker build \
+          --build-arg CYBORG_REPO="$CYBORG_REPO" \
+          --build-arg CYBORG_BRANCH="$CYBORG_BRANCH" \
           -t cyborg-rl-training:$IMAGE_TAG \
           -f cyborg-sagemaker/docker/training/Dockerfile \
           .
       - echo "Training image built successfully"
-      - echo "Building evaluation image..."
+      - echo "Building evaluation image (with code repositories and Metasploit)..."
       - |
         docker build \
+          --build-arg SB3_REPO="$SB3_REPO" \
+          --build-arg SB3_BRANCH="$SB3_BRANCH" \
+          --build-arg SB3_CONTRIB_REPO="$SB3_CONTRIB_REPO" \
+          --build-arg SB3_CONTRIB_BRANCH="$SB3_CONTRIB_BRANCH" \
+          --build-arg CYBORG_REPO="$CYBORG_REPO" \
+          --build-arg CYBORG_BRANCH="$CYBORG_BRANCH" \
           -t cyborg-rl-evaluation:$IMAGE_TAG \
           -f cyborg-sagemaker/docker/evaluation/Dockerfile \
           .

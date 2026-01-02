@@ -1,8 +1,15 @@
-# Evaluation container - inherits from locally built base image and adds Metasploit
-# When pushed to ECR, this will be tagged appropriately
+# Evaluation container - clones code repositories and adds Metasploit
+# This image rebuilds quickly when code changes (dependencies pre-installed in base)
 FROM cyborg-rl-base:latest
 
-# Install Metasploit Framework for AWS emulation mode
+# Build arguments for repository configuration
+ARG SB3_REPO=https://github.com/roughscale/stable-baselines3.git
+ARG SB3_BRANCH=master
+ARG SB3_CONTRIB_REPO=https://github.com/roughscale/stable-baselines3-contrib.git
+ARG SB3_CONTRIB_BRANCH=master
+ARG CYBORG_REPO=https://github.com/roughscale/cyborg.git
+ARG CYBORG_BRANCH=main
+
 USER root
 
 # Install Metasploit dependencies
@@ -19,10 +26,27 @@ RUN chmod +x /tmp/metasploit-setup.sh && \
     /tmp/metasploit-setup.sh && \
     rm /tmp/metasploit-setup.sh
 
-# Install pymetasploit3 for Python integration
-RUN pip install --no-cache-dir pymetasploit3==1.0.3 pyvelociraptor==0.1.3
+# Clone and install stable-baselines3
+RUN git clone ${SB3_REPO} /opt/stable-baselines3 && \
+    cd /opt/stable-baselines3 && \
+    git checkout ${SB3_BRANCH} && \
+    echo "stable-baselines3: $(git rev-parse HEAD)" && \
+    pip install --no-cache-dir -e .
 
-# Copy CybORG source code (from context root)
+# Clone and install stable-baselines3-contrib
+RUN git clone ${SB3_CONTRIB_REPO} /opt/stable-baselines3-contrib && \
+    cd /opt/stable-baselines3-contrib && \
+    git checkout ${SB3_CONTRIB_BRANCH} && \
+    echo "stable-baselines3-contrib: $(git rev-parse HEAD)" && \
+    pip install --no-cache-dir -e .
+
+# Clone CybORG
+RUN git clone ${CYBORG_REPO} /opt/cyborg && \
+    cd /opt/cyborg && \
+    git checkout ${CYBORG_BRANCH} && \
+    echo "CybORG: $(git rev-parse HEAD)"
+
+# Copy CybORG source to working directory
 COPY cyborg/CybORG/CybORG /opt/ml/code/CybORG
 
 # Copy evaluation source code
@@ -32,10 +56,16 @@ COPY cyborg-sagemaker/src/common /opt/ml/code/common
 # Set working directory
 WORKDIR /opt/ml/processing
 
-# Labels for tracking
+# Labels for tracking build configuration
 LABEL maintainer="CybORG RL Team"
 LABEL description="CybORG RL Evaluation Container for SageMaker (with Metasploit)"
 LABEL type="evaluation"
+LABEL sb3.repo="${SB3_REPO}"
+LABEL sb3.branch="${SB3_BRANCH}"
+LABEL sb3_contrib.repo="${SB3_CONTRIB_REPO}"
+LABEL sb3_contrib.branch="${SB3_CONTRIB_BRANCH}"
+LABEL cyborg.repo="${CYBORG_REPO}"
+LABEL cyborg.branch="${CYBORG_BRANCH}"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
