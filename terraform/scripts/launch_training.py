@@ -254,11 +254,11 @@ class SageMakerTrainingLauncher:
         image_uri = f"{self.training_image}:{image_tag}"
 
         # Build hyperparameters (all must be strings)
+        # Note: scenario_name and environment_mode are passed as environment variables
+        # to keep them out of the hyperparameters display (16 param console limit)
         job_hyperparameters = {
             "algorithm": algorithm,
             "total_steps": str(total_steps),
-            "scenario_name": scenario,
-            "environment_mode": environment_mode,
         }
 
         if seed is not None:
@@ -274,6 +274,12 @@ class SageMakerTrainingLauncher:
         # Add custom hyperparameters (these override config defaults)
         job_hyperparameters.update(hyperparameters)
 
+        # Build environment variables for job metadata
+        environment_variables = {
+            "SCENARIO_NAME": scenario,
+            "ENVIRONMENT_MODE": environment_mode,
+        }
+
         # Build training job configuration
         config = {
             "TrainingJobName": job_name,
@@ -283,6 +289,7 @@ class SageMakerTrainingLauncher:
                 "TrainingInputMode": "File",
                 "MetricDefinitions": METRIC_DEFINITIONS[algorithm],
             },
+            "Environment": environment_variables,
             "ResourceConfig": {
                 "InstanceType": instance_type,
                 "InstanceCount": 1,

@@ -40,20 +40,28 @@ logger = get_logger(__name__)
 
 
 def parse_args():
-    """Parse SageMaker hyperparameters from command line arguments."""
+    """Parse SageMaker hyperparameters from command line arguments.
+
+    Note: scenario_name and environment_mode are now read from environment variables
+    (SCENARIO_NAME and ENVIRONMENT_MODE) to avoid the 16-param console display limit.
+    """
     parser = argparse.ArgumentParser(description='CybORG SageMaker Training')
 
     # Required hyperparameters
     parser.add_argument('--algorithm', type=str, required=True,
                        choices=Algorithms.ALL,
                        help='RL algorithm to train')
-    parser.add_argument('--environment_mode', type=str, default='sim',
-                       choices=['sim', 'aws'],
-                       help='Environment mode (sim or aws)')
-    parser.add_argument('--scenario_name', type=str, required=True,
-                       help='Scenario YAML filename')
     parser.add_argument('--total_steps', type=int, required=True,
                        help='Total training timesteps')
+
+    # Job metadata from environment variables (not hyperparameters)
+    parser.add_argument('--environment_mode', type=str,
+                       default=os.getenv('ENVIRONMENT_MODE', 'sim'),
+                       choices=['sim', 'aws'],
+                       help='Environment mode (from env var ENVIRONMENT_MODE)')
+    parser.add_argument('--scenario_name', type=str,
+                       default=os.getenv('SCENARIO_NAME'),
+                       help='Scenario YAML filename (from env var SCENARIO_NAME)')
 
     # Algorithm-agnostic hyperparameters
     parser.add_argument('--gamma', type=float, default=0.99,
@@ -85,6 +93,10 @@ def parse_args():
     # DRQN specific
     parser.add_argument('--num_prev_seq', type=int, default=20,
                        help='Number of previous transitions in sequence')
+    parser.add_argument('--use_full_episodes', type=lambda x: str(x).lower() == 'true', default=True,
+                       help='Use full episode sequences for training')
+    parser.add_argument('--zero_init_lstm_states', type=lambda x: str(x).lower() == 'true', default=False,
+                       help='Zero-initialize LSTM hidden states')
     parser.add_argument('--prioritized_replay_alpha', type=float, default=0.9,
                        help='PER alpha (prioritization strength)')
     parser.add_argument('--prioritized_replay_beta0', type=float, default=0.4,
@@ -117,6 +129,14 @@ def parse_args():
                        help='Number of parallel environments')
 
     args, _ = parser.parse_known_args()
+
+    # Validate that scenario_name was provided (either via env var or arg)
+    if not args.scenario_name:
+        raise ValueError(
+            "scenario_name must be provided either via --scenario_name argument "
+            "or SCENARIO_NAME environment variable"
+        )
+
     return args
 
 
