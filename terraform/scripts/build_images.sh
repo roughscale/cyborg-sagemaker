@@ -18,6 +18,9 @@ SB3_CONTRIB_BRANCH="${SB3_CONTRIB_BRANCH:-master}"
 CYBORG_BRANCH="${CYBORG_BRANCH:-main}"
 GIT_BRANCH=""
 FOLLOW_LOGS=false
+BUILD_BASE=true
+BUILD_TRAINING=true
+BUILD_EVALUATION=true
 
 # Print usage
 usage() {
@@ -28,6 +31,9 @@ usage() {
     echo "Options:"
     echo "  -h, --help                Show this help message"
     echo "  -f, --follow              Follow build logs in real-time"
+    echo "  --base-only               Build only base image"
+    echo "  --training-only           Build only training image"
+    echo "  --evaluation-only         Build only evaluation image"
     echo "  --profile <name>          AWS profile to use (default: default)"
     echo "  --tag <tag>               Docker image tag (default: latest)"
     echo "  --git-branch <branch>     Git branch to build from for cyborg-sagemaker (default: configured in Terraform)"
@@ -57,6 +63,9 @@ usage() {
     echo ""
     echo "  # Build with specific SB3 commits"
     echo "  $0 --sb3-branch abc123 --sb3-contrib def456"
+    echo ""
+    echo "  # Build only training image (pulls base from ECR)"
+    echo "  $0 --training-only --follow"
     exit 1
 }
 
@@ -68,6 +77,21 @@ while [[ $# -gt 0 ]]; do
             ;;
         -f|--follow)
             FOLLOW_LOGS=true
+            shift
+            ;;
+        --base-only)
+            BUILD_TRAINING=false
+            BUILD_EVALUATION=false
+            shift
+            ;;
+        --training-only)
+            BUILD_BASE=false
+            BUILD_EVALUATION=false
+            shift
+            ;;
+        --evaluation-only)
+            BUILD_BASE=false
+            BUILD_TRAINING=false
             shift
             ;;
         --profile)
@@ -119,7 +143,7 @@ echo -e "${GREEN}Region: ${AWS_REGION}${NC}"
 echo ""
 
 # Build environment variables override array
-ENV_OVERRIDES="name=IMAGE_TAG,value=$IMAGE_TAG,type=PLAINTEXT name=CYBORG_BRANCH,value=$CYBORG_BRANCH,type=PLAINTEXT name=SB3_BRANCH,value=$SB3_BRANCH,type=PLAINTEXT name=SB3_CONTRIB_BRANCH,value=$SB3_CONTRIB_BRANCH,type=PLAINTEXT"
+ENV_OVERRIDES="name=IMAGE_TAG,value=$IMAGE_TAG,type=PLAINTEXT name=CYBORG_BRANCH,value=$CYBORG_BRANCH,type=PLAINTEXT name=SB3_BRANCH,value=$SB3_BRANCH,type=PLAINTEXT name=SB3_CONTRIB_BRANCH,value=$SB3_CONTRIB_BRANCH,type=PLAINTEXT name=BUILD_BASE,value=$BUILD_BASE,type=PLAINTEXT name=BUILD_TRAINING,value=$BUILD_TRAINING,type=PLAINTEXT name=BUILD_EVALUATION,value=$BUILD_EVALUATION,type=PLAINTEXT"
 
 # Build command
 START_BUILD_CMD="aws codebuild start-build \
