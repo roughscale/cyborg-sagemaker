@@ -2,27 +2,19 @@
 
 Deploy CybORG pentesting reinforcement learning agents to AWS SageMaker for scalable training and evaluation.
 
-## 🎯 Project Goals
+## Project Status
 
-- Train CybORG RL agents (DRQN, DQN, PPO, RecurrentPPO) on AWS SageMaker
-- Support both simulation and AWS emulation modes
-- Infrastructure as Code with Terraform
-- Production-ready with monitoring, checkpointing, and cost optimization
+DRQN training pipeline deployed and tested. Infrastructure supports DRQN, DQN, PPO, and RecurrentPPO algorithms in both simulation and AWS emulation modes.
 
-## 📊 Current Status
+**Completed:**
+- Terraform infrastructure (IAM, ECR, S3, VPC, CodeBuild)
+- Docker build pipeline with selective image building
+- DRQN training implementation with hyperparameter optimization
+- CloudWatch metrics and TensorBoard integration
+- S3 checkpointing and model persistence
+- Configuration management (YAML configs, scenarios)
 
-**Phase 1-4 Complete:** DRQN training pipeline ready for deployment
-- ✅ Terraform infrastructure (IAM, ECR, S3, VPC, CodeBuild)
-- ✅ CodeBuild for building Docker images in AWS (faster ECR push)
-- ✅ Docker containers with configurable SB3 fork versions
-- ✅ Training source code (env_factory, train.py, DRQN trainer, callbacks)
-- ✅ Configuration management (YAML configs, scenarios)
-- ✅ Helper scripts (build_images.sh, launch_training.py, upload_configs.sh)
-- ✅ Simplified single-environment setup
-
-**Ready to Deploy:** Infrastructure can be deployed and DRQN training can begin!
-
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -32,15 +24,15 @@ Deploy CybORG pentesting reinforcement learning agents to AWS SageMaker for scal
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │                    CodeBuild                                │ │
 │  │  Clones Git repos → Builds Docker images → Pushes to ECR  │ │
-│  │  (cyborg + cyborg-sagemaker)                               │ │
+│  │  Supports selective builds (base/training/evaluation)     │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                            │                                     │
 │                            ▼                                     │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                    ECR Repositories                        │  │
-│  │  - cyborg-rl-research/base       (PyTorch + SB3)         │  │
-│  │  - cyborg-rl-research/training   (CybORG + training)     │  │
-│  │  - cyborg-rl-research/evaluation (+ Metasploit)          │  │
+│  │  - base: PyTorch + all Python dependencies                │  │
+│  │  - training: SB3 repos + CybORG + training code           │  │
+│  │  - evaluation: SB3 repos + CybORG + Metasploit            │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                            │                                     │
 │  ┌─────────────────────────▼───────────────────────────────┐   │
@@ -48,31 +40,30 @@ Deploy CybORG pentesting reinforcement learning agents to AWS SageMaker for scal
 │  │  ┌──────────────────┐       ┌──────────────────┐        │   │
 │  │  │  Training Jobs   │       │ Processing Jobs  │        │   │
 │  │  │  (GPU instances) │       │ (CPU instances)  │        │   │
-│  │  │  - DRQN, DQN     │       │  - Evaluation    │        │   │
-│  │  │  - PPO, RecPPO   │       │  - AWS Emulation │        │   │
+│  │  │  DRQN, DQN       │       │  Evaluation      │        │   │
+│  │  │  PPO, RecPPO     │       │  AWS Emulation   │        │   │
 │  │  └────────┬─────────┘       └────────┬─────────┘        │   │
 │  │           └──────────────┬────────────┘                  │   │
 │  │                          ▼                               │   │
 │  │           ┌────────────────────────────┐                 │   │
 │  │           │       S3 Bucket            │                 │   │
-│  │           │  - Models/Checkpoints      │                 │   │
-│  │           │  - TensorBoard/Configs     │                 │   │
+│  │           │  Models & Checkpoints      │                 │   │
+│  │           │  TensorBoard Logs          │                 │   │
+│  │           │  Configuration Files       │                 │   │
 │  │           └────────────────────────────┘                 │   │
 │  └───────────────────────────────────────────────────────────┘  │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - AWS Account with appropriate permissions
 - Terraform >= 1.5
 - AWS CLI configured
-- Git repositories:
-  - `cyborg-sagemaker` (this repository)
-  - `cyborg` (CybORG source)
+- Git repositories for cyborg-sagemaker and cyborg
 
 ### 1. Configure Variables
 
@@ -81,214 +72,160 @@ cd terraform
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars` and configure:
-- `git_repository_url` - Your cyborg-sagemaker Git repository URL
-- `cyborg_repository_url` - Your CybORG Git repository URL
+Edit `terraform.tfvars`:
+- `git_repository_url` - cyborg-sagemaker Git repository URL
+- `cyborg_repository_url` - CybORG Git repository URL
 - `aws_region` - AWS region (default: ap-southeast-2)
-- Other project settings
 
 ### 2. Deploy Infrastructure
 
 ```bash
-# Initialize Terraform
 terraform init
-
-# Review plan
 terraform plan
-
-# Deploy (creates ECR, S3, IAM roles, CodeBuild, optional VPC)
 terraform apply
 ```
 
-### 3. Build and Push Docker Images
+Creates ECR repositories, S3 bucket, IAM roles, CodeBuild project, and optional VPC for AWS emulation.
 
-**Option A: Build in AWS (Recommended - faster ECR push)**
+### 3. Build Docker Images
+
+CodeBuild clones repositories, builds images, and pushes to ECR:
 
 ```bash
-# CodeBuild clones Git repos, builds images, pushes to ECR
+# Build all images
 ./scripts/build_images.sh --follow
+
+# Build only training image (pulls base from ECR)
+./scripts/build_images.sh --training-only --follow
 
 # Build from specific branches
 ./scripts/build_images.sh \
   --git-branch feature/new-algo \
   --cyborg-branch develop \
-  --sb3-branch abc123
-
-# Build with custom tag
-./scripts/build_images.sh --tag v1.0.0 --follow
+  --sb3-contrib feature/drqn_fixes \
+  --follow
 ```
 
-**Option B: Build Locally (slower for large images)**
-
-```bash
-cd ../docker
-
-# Build and push all images
-./build.sh
-
-# Build only training image
-./build.sh --training-only
-
-# Build with specific SB3 commits
-SB3_BRANCH=abc123 SB3_CONTRIB_BRANCH=def456 ./build.sh
-```
+The base image contains all Python dependencies. Training and evaluation images clone and install code repositories at build time, enabling fast iteration when modifying experimental code.
 
 ### 4. Upload Configuration Files
 
 ```bash
-cd ../terraform
 ./scripts/upload_configs.sh
 ```
 
 ### 5. Launch Training Job
 
 ```bash
-# Using Python (recommended for full control):
+# Basic usage
 python scripts/launch_training.py --algorithm drqn --total-steps 500000
 
-# Or using bash wrapper for convenience:
-./scripts/launch_training.sh drqn 500000
-
-# With custom settings:
+# With custom hyperparameters
 python scripts/launch_training.py \
   --algorithm drqn \
   --total-steps 500000 \
   --instance-type ml.g4dn.xlarge \
-  --seed 42 \
-  --hyperparameter learning_rate=0.00005
+  --hyperparameter use_full_episodes=false \
+  --hyperparameter zero_init_lstm_states=true
 ```
+
+Hyperparameters from `configs/algorithms/drqn.yaml` are automatically loaded and displayed in the SageMaker console (16 parameter display limit). Job metadata (scenario_name, environment_mode) is passed as environment variables.
 
 ### 6. Monitor Training
 
 ```bash
-# Get console URLs
-terraform output job_console_url
-terraform output cloudwatch_logs_url
-
-# Or stream logs directly
-JOB_NAME=$(terraform output -raw training_job_name)
+# Stream logs
+JOB_NAME=<training-job-name>
 aws logs tail /aws/sagemaker/TrainingJobs --follow --filter-pattern $JOB_NAME
 ```
 
-## 📁 Project Structure
+CloudWatch metrics available in SageMaker console:
+- episode_reward, episode_length, episode_number, total_timesteps
+- exploration_rate, loss, per_beta (DRQN-specific)
+
+## Project Structure
 
 ```
 cyborg-sagemaker/
 ├── terraform/
-│   ├── main.tf                     # ✅ Main orchestration
-│   ├── variables.tf                # ✅ Input variables (incl. Git repos)
-│   ├── outputs.tf                  # ✅ Output values
-│   ├── backend.tf                  # ✅ State backend config
-│   ├── terraform.tfvars.example    # ✅ Example configuration
+│   ├── main.tf, variables.tf, outputs.tf
 │   ├── modules/
-│   │   ├── base-infrastructure/    # ✅ ECR, S3, IAM, VPC, CodeBuild
-│   │   └── evaluation-job/         # ⏳ SageMaker processing jobs (future)
+│   │   └── base-infrastructure/         # ECR, S3, IAM, VPC, CodeBuild
 │   └── scripts/
-│       ├── build_images.sh         # ✅ Trigger CodeBuild
-│       ├── launch_training.py      # ✅ Launch training (boto3)
-│       ├── launch_training.sh      # ✅ Bash wrapper
-│       └── upload_configs.sh       # ✅ Upload configs to S3
+│       ├── build_images.sh              # Trigger CodeBuild
+│       ├── launch_training.py           # Launch training via boto3
+│       └── upload_configs.sh            # Upload configs to S3
 │
 ├── docker/
-│   ├── base/                       # ✅ Base image (PyTorch + SB3)
-│   ├── training/                   # ✅ Training container
-│   ├── evaluation/                 # ✅ Evaluation container
-│   ├── buildspec.yml               # ✅ CodeBuild build spec
-│   ├── build.sh                    # ✅ Local build script
-│   └── build.env.example           # ✅ Example build config
+│   ├── base/                            # Dependencies only
+│   ├── training/                        # Clone repos + training code
+│   ├── evaluation/                      # Clone repos + Metasploit
+│   ├── buildspec.yml                    # CodeBuild spec with selective builds
+│   └── build.sh                         # Local build script
 │
 ├── src/
-│   ├── common/                     # ✅ Shared utilities
-│   ├── training/                   # ✅ DRQN training (DQN, PPO, RecurrentPPO pending)
-│   │   ├── train.py                # ✅ Main entry point
-│   │   ├── algorithms/             # ✅ DRQN trainer
-│   │   ├── callbacks/              # ✅ CloudWatch, checkpointing
-│   │   └── utils/                  # ✅ Env factory, config, S3
-│   └── evaluation/                 # ⏳ Evaluation implementation
+│   ├── common/                          # Shared constants and logging
+│   ├── training/
+│   │   ├── train.py                     # Entry point (reads env vars)
+│   │   ├── algorithms/                  # DRQN trainer
+│   │   ├── callbacks/                   # CloudWatch, checkpointing
+│   │   └── utils/                       # Env factory, config, S3
+│   └── evaluation/                      # Evaluation implementation
 │
-├── configs/
-│   ├── algorithms/                 # ✅ DRQN config (others pending)
-│   └── environments/
-│       └── scenarios/              # ✅ DRQN scenario
-│
-└── scripts/                        # ⏳ Utility scripts
+└── configs/
+    ├── algorithms/                      # DRQN hyperparameters
+    └── environments/scenarios/          # DRQN scenario
 ```
 
-**Legend:** ✅ Complete | ⏳ Pending
+## Key Technologies
 
-## 🛠️ Key Technologies
+- Cloud: AWS SageMaker, CodeBuild, S3, ECR, VPC
+- IaC: Terraform
+- Containers: Docker, PyTorch 2.0.1
+- ML: Stable-Baselines3 (custom forks with DRQN)
+- RL Algorithms: DRQN, DQN, PPO, Recurrent PPO
+- Environment: CybORG (pentesting simulation)
 
-- **Cloud:** AWS SageMaker, CodeBuild, S3, ECR, VPC
-- **IaC:** Terraform
-- **Containers:** Docker, PyTorch Official Images
-- **ML:** PyTorch 2.0.1, Stable-Baselines3 (custom forks)
-- **RL Algorithms:** DRQN, DQN, PPO, Recurrent PPO
-- **Environment:** CybORG (pentesting simulation)
+## Docker Build Strategy
 
-## 💰 Cost Estimates
+Base image contains all Python dependencies for SB3, SB3-contrib, and CybORG. Training and evaluation images clone repositories and install code with `pip install -e`, enabling fast rebuilds when code changes:
 
-### Docker Builds:
-- **CodeBuild:** ~$0.15-0.30 per build (15-20 min on BUILD_GENERAL1_LARGE)
-- **ECR Storage:** ~$0.10/GB/month (images are ~6-8GB total)
+- Dependency change: rebuild base image (slow, ~10-15 min)
+- Code change: rebuild training/evaluation only (fast, ~2-3 min)
 
-### Training (per run):
-- **DRQN:** ~$1-2 (200K steps, 4-6 hours on ml.g4dn.xlarge spot)
-- **PPO:** ~$3-5 (400K steps, 8-12 hours on ml.g4dn.2xlarge spot)
+The `--training-only`, `--base-only`, and `--evaluation-only` flags control which images to build.
 
-### Evaluation:
-- **Simulation:** ~$0.02-0.06 (100 episodes, 30 min on ml.m5.large spot)
-- **AWS Emulation:** ~$0.80-1.20 (10 episodes, 2-3 hours on ml.c5.2xlarge)
+## Cost Estimates
 
-### Infrastructure (monthly):
-- **S3 + ECR + CloudWatch:** ~$2-10 depending on retention policies
+**Docker Builds:**
+- CodeBuild: $0.15-0.30 per build (15-20 min)
+- ECR Storage: $0.10/GB/month (6-8GB total)
 
-## 📚 Documentation
+**Training (per run):**
+- DRQN: $1-2 (200K steps, 4-6 hours, ml.g4dn.xlarge spot)
+- PPO: $3-5 (400K steps, 8-12 hours, ml.g4dn.2xlarge spot)
 
-- **[terraform/README.md](terraform/README.md)** - Detailed Terraform usage guide
-- **[terraform/modules/training-job/README.md](terraform/modules/training-job/README.md)** - Training job module docs
-- **[Original Plan](/home/boloughlin/.claude/plans/cuddly-plotting-globe.md)** - Complete architecture design
+**Evaluation:**
+- Simulation: $0.02-0.06 (100 episodes, 30 min, ml.m5.large spot)
+- AWS Emulation: $0.80-1.20 (10 episodes, 2-3 hours, ml.c5.2xlarge)
 
-## 🔗 Dependencies
+**Infrastructure (monthly):**
+- S3 + ECR + CloudWatch: $2-10
 
-### Custom Forks:
-- [stable-baselines3](https://github.com/roughscale/stable-baselines3) - Custom DRQN/DQN implementations
-- [stable-baselines3-contrib](https://github.com/roughscale/stable-baselines3-contrib) - DRQN, Recurrent PPO
+## Dependencies
 
-### Source Code:
+**Custom Forks:**
+- [stable-baselines3](https://github.com/roughscale/stable-baselines3)
+- [stable-baselines3-contrib](https://github.com/roughscale/stable-baselines3-contrib) (DRQN with full episode support)
+
+**Source Code:**
 - CybORG: `/home/boloughlin/projects/roughscale/research/rl/cyborg/CybORG/CybORG/`
-- Reference training: `/home/boloughlin/projects/roughscale/research/rl/cyborg/CybORG/openai_*_msf_test.py`
+- Reference: `/home/boloughlin/projects/roughscale/research/rl/cyborg/CybORG/openai_*_msf_test.py`
 
-## 🤝 Contributing
+## License
 
-This is a research project. To contribute:
-
-1. Review the README files in terraform/ and training-job module for current status
-2. Choose a pending task (DQN, PPO, RecurrentPPO trainers, or evaluation implementation)
-3. Implement following the architecture in the original plan
-4. Test locally before deploying to SageMaker
-
-## 📝 License
-
-Inherits licenses from:
-- CybORG project
-- Stable-Baselines3 (MIT)
-- AWS SageMaker (AWS Customer Agreement)
-
-## 🆘 Support
-
-For questions or issues:
-1. Check the terraform/README.md for detailed deployment instructions
-2. Review existing training scripts in `/home/boloughlin/projects/roughscale/research/rl/cyborg/CybORG/`
-3. Consult [AWS SageMaker documentation](https://docs.aws.amazon.com/sagemaker/)
+Inherits licenses from CybORG, Stable-Baselines3 (MIT), and AWS SageMaker (AWS Customer Agreement).
 
 ---
 
-**Status:** DRQN training pipeline complete and ready for deployment!
-**Last Updated:** 2025-12-31
-
-**Next Steps:**
-1. Configure Git repos in `terraform/terraform.tfvars`
-2. Deploy infrastructure: `cd terraform && terraform apply`
-3. Build Docker images: `./scripts/build_images.sh --follow`
-4. Upload configs: `./scripts/upload_configs.sh`
-5. Launch DRQN training: `python scripts/launch_training.py --algorithm drqn --total-steps 750000`
+**Last Updated:** 2026-01-03

@@ -1,0 +1,100 @@
+Agents:
+  Red:
+    AllowedSubnets:
+      - External
+      - Internal
+    INT:
+      Network:
+        Subnets:
+          - External
+      Hosts:
+        Attacker0:
+          Processes: All
+          Sessions: All
+          SystemInfo:
+            Hostname: Attacker0
+    external_hosts:
+      - Attacker0
+    external_subnets:
+      - Attacker
+    actions:
+    - Sleep
+    #- SambaUsermapScript
+    - SSHLoginExploit
+    #- TomcatExploit
+    #- MSFEternalBlue
+    - MS17_010_PSExec
+    #- TomcatCredentialScanner
+    - MSFPortscan
+    - MSFPingsweep
+    #- MSFV4L2KernelExploit # linux based priv esc.  Need to implement MSF for emulated case
+    - MSFSubUidShell # linux based priv esc.  Need to implement MSF for emulated case
+    - MSFJuicyPotato # windows based priv esc. Need to implement MSF in emulated case.
+    - UpgradeToMeterpreter
+    - MeterpreterIPConfig
+    - MSFAutoroute
+    #- ServicePersistenceWindows
+    #    - GetUid
+    #- GetPid
+    #- GetShell
+    #- LocalTime
+    #- MeterpreterPS
+    #- SysInfo
+    #- MeterpreterReboot
+    agent_type: RedDRQNAgent
+    reward_calculator_type: Goal
+    starting_sessions:
+    - username: root
+      hostname: Attacker0
+      type: MetasploitServer # this needs to be a known server session type
+      name: MSFServer
+      pid: 32000
+    - username: root
+      hostname: Attacker0
+      type: MSF_SHELL
+      name: MSFShell
+      pid: 1500
+      ident: 0
+      routes: [ External ]
+    wrappers: []
+Hosts:
+  Attacker0:
+    AWS_Info: []
+    image: External
+  External0:
+    AWS_Info: []
+    image: Gateway
+  Internal0:
+    image: linux_user_host
+  Internal1:
+    image: windows_user_host
+  Internal2:
+    image: linux_user_host
+Subnets:
+  Attacker:
+    Hosts:
+    - Attacker0
+    NACLs:
+      all:
+        in: all
+        out: all
+    Size: 1
+  External:
+    Hosts:
+    - External0
+    NACLs:
+      all:
+        in: all
+        out: all
+    Size: 1
+  Internal:
+    Hosts:
+    - External0
+    - Internal0
+    - Internal1
+    - Internal2
+    NACLs:
+      all:
+        in: all
+        out: all  
+    Size: 3

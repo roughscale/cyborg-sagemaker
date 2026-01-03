@@ -1,0 +1,75 @@
+# DRQN Configuration for CybORG RL Training
+# Deep Recurrent Q-Network with Double and Dueling enhancements
+
+# Environment Configuration
+fully_obs: false  # Partial observability (POMDP)
+randomize_env: false
+
+max_params:
+  MAX_HOSTS: 5
+  MAX_PROCESSES: 2
+  MAX_CONNECTIONS: 2
+  MAX_VULNERABILITIES: 1
+  MAX_INTERFACES: 2
+  MAX_SESSIONS: 3
+  MAX_USERS: 5
+  MAX_FILES: 0
+  MAX_GROUPS: 0
+  MAX_PATCHES: 0
+
+# Default Hyperparameters
+# These can be overridden by Terraform variables or command-line arguments
+hyperparameters:
+  # Core RL parameters
+  gamma: 0.99
+  learning_rate: 0.0001
+
+  # DQN/DRQN parameters
+  batch_size: 32
+  initial_epsilon: 1.0
+  final_epsilon: 0.02
+  exploration_fraction: 0.9
+
+  # DRQN-specific parameters
+  num_prev_seq: 40  # Number of previous transitions in sequence
+  use_full_episodes: true  # Use full episode sequences for training
+  double: true      # Use Double DQN to prevent Q-value overestimation
+  dueling: true     # Use Dueling architecture (separate V and A streams)
+
+  # Prioritized Experience Replay (PER)
+  prioritized_replay_alpha: 0.9   # Prioritization strength (0=uniform, 1=full prioritization)
+  prioritized_replay_beta0: 0.4   # Initial importance sampling correction
+
+  # Buffer configuration
+  # buffer_size: null  # If null, will be set to total_steps/5 dynamically
+
+# Network Architecture
+network:
+  type: lstm
+  # Architecture is dynamically set to [input_size, input_size]
+  # where input_size is calculated from observation space
+  hidden_size: input  # Uses input size as hidden size
+  lstm_num_layers: 2  # Number of LSTM layers
+
+# Training Configuration
+training:
+  # These are typically set by Terraform or command line
+  total_steps: 500000  # Total training timesteps
+  n_envs: 1            # Number of parallel environments
+  checkpoint_freq: 10000  # Save checkpoint every N steps
+
+  # Device configuration
+  device: auto  # 'auto', 'cuda', or 'cpu'
+
+# Scenario Configuration
+# Default scenario file (can be overridden)
+scenario: drqn_scenario.yaml
+
+# Notes:
+# - This config uses partial observability (fully_obs: false) which makes the task harder
+#   but is more realistic for the DRQN architecture
+# - The double and dueling flags enable state-of-the-art DQN enhancements
+# - num_prev_seq=20 means each training sample includes 20 consecutive transitions
+#   This allows the LSTM to learn temporal dependencies
+# - PER alpha=0.9 and beta0=0.4 are standard values for prioritized replay
+# - Learning rate of 0.0001 is constant (not scheduled)

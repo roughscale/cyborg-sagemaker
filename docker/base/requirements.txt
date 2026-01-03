@@ -1,0 +1,29 @@
+# Core ML/RL dependencies (stable-baselines3 requirements)
+gymnasium==0.29.1
+numpy>=1.20
+matplotlib>=3.5
+cloudpickle
+pandas
+tensorboard>=2.10
+
+# Stable-baselines3-contrib additional requirements
+tqdm
+typing-extensions>=4.0
+
+# CybORG dependencies
+gym==0.26.2  # Legacy gym for CybORG compatibility
+PyYAML>=6.0
+networkx
+paramiko==2.6.0
+prettytable==0.7.2
+shimmy==0.2.1
+
+# AWS and S3
+boto3==1.13.3
+botocore==1.16.3
+
+# Message queue (for AWS emulation)
+pika==1.1.0
+
+# Metasploit integration (for AWS emulation)
+pymetasploit3

@@ -1,0 +1,124 @@
+version: 0.2
+
+env:
+  variables:
+    IMAGE_TAG: "latest"
+    ENVIRONMENT: "research"
+    CYBORG_REPO: "https://github.com/roughscale/cyborg.git"
+    CYBORG_BRANCH: "main"
+    BUILD_BASE: "true"
+    BUILD_TRAINING: "true"
+    BUILD_EVALUATION: "true"
+  exported-variables:
+    - IMAGE_TAG
+    - ENVIRONMENT
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo "Setting build variables..."
+      - export SB3_REPO=${SB3_REPO:-https://github.com/roughscale/stable-baselines3.git}
+      - export SB3_BRANCH=${SB3_BRANCH:-master}
+      - export SB3_CONTRIB_REPO=${SB3_CONTRIB_REPO:-https://github.com/roughscale/stable-baselines3-contrib.git}
+      - export SB3_CONTRIB_BRANCH=${SB3_CONTRIB_BRANCH:-master}
+      - export ECR_BASE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cyborg-rl-$ENVIRONMENT
+      - echo "ECR Base URI = $ECR_BASE_URI"
+      - echo "Image Tag = $IMAGE_TAG"
+      - echo "Preparing build workspace..."
+      - export BUILD_WORKSPACE=/tmp/build-workspace
+      - mkdir -p $BUILD_WORKSPACE
+      - echo "Build workspace = $BUILD_WORKSPACE"
+      - echo "Copying cyborg-sagemaker source to workspace..."
+      - cp -r $CODEBUILD_SRC_DIR $BUILD_WORKSPACE/cyborg-sagemaker
+      - echo "Cloning CybORG repository from $CYBORG_REPO (branch $CYBORG_BRANCH)..."
+      - git clone --depth 1 --branch $CYBORG_BRANCH $CYBORG_REPO $BUILD_WORKSPACE/cyborg
+      - echo "CybORG repository cloned"
+      - echo "Workspace structure"
+      - ls -la $BUILD_WORKSPACE
+      - cd $BUILD_WORKSPACE
+
+  build:
+    commands:
+      - |
+        if [ "$BUILD_BASE" = "true" ]; then
+          echo "Building base image (dependencies only)..."
+          docker build \
+            -t cyborg-rl-base:$IMAGE_TAG \
+            -f cyborg-sagemaker/docker/base/Dockerfile \
+            .
+          echo "Base image built successfully"
+        else
+          echo "Skipping base image build (pulling from ECR)..."
+          aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+          docker pull $ECR_BASE_URI/base:$IMAGE_TAG
+          docker tag $ECR_BASE_URI/base:$IMAGE_TAG cyborg-rl-base:$IMAGE_TAG
+          echo "Base image pulled from ECR"
+        fi
+      - |
+        if [ "$BUILD_TRAINING" = "true" ]; then
+          echo "Building training image (with code repositories)..."
+          docker build \
+            --build-arg SB3_REPO="$SB3_REPO" \
+            --build-arg SB3_BRANCH="$SB3_BRANCH" \
+            --build-arg SB3_CONTRIB_REPO="$SB3_CONTRIB_REPO" \
+            --build-arg SB3_CONTRIB_BRANCH="$SB3_CONTRIB_BRANCH" \
+            --build-arg CYBORG_REPO="$CYBORG_REPO" \
+            --build-arg CYBORG_BRANCH="$CYBORG_BRANCH" \
+            -t cyborg-rl-training:$IMAGE_TAG \
+            -f cyborg-sagemaker/docker/training/Dockerfile \
+            .
+          echo "Training image built successfully"
+        else
+          echo "Skipping training image build"
+        fi
+      - |
+        if [ "$BUILD_EVALUATION" = "true" ]; then
+          echo "Building evaluation image (with code repositories and Metasploit)..."
+          docker build \
+            --build-arg SB3_REPO="$SB3_REPO" \
+            --build-arg SB3_BRANCH="$SB3_BRANCH" \
+            --build-arg SB3_CONTRIB_REPO="$SB3_CONTRIB_REPO" \
+            --build-arg SB3_CONTRIB_BRANCH="$SB3_CONTRIB_BRANCH" \
+            --build-arg CYBORG_REPO="$CYBORG_REPO" \
+            --build-arg CYBORG_BRANCH="$CYBORG_BRANCH" \
+            -t cyborg-rl-evaluation:$IMAGE_TAG \
+            -f cyborg-sagemaker/docker/evaluation/Dockerfile \
+            .
+          echo "Evaluation image built successfully"
+        else
+          echo "Skipping evaluation image build"
+        fi
+
+  post_build:
+    commands:
+      - echo "Tagging and pushing images to ECR..."
+      - |
+        if [ "$BUILD_BASE" = "true" ]; then
+          echo "Pushing base image..."
+          docker tag cyborg-rl-base:$IMAGE_TAG $ECR_BASE_URI/base:$IMAGE_TAG
+          docker push $ECR_BASE_URI/base:$IMAGE_TAG
+          echo "Base image pushed: $ECR_BASE_URI/base:$IMAGE_TAG"
+        fi
+      - |
+        if [ "$BUILD_TRAINING" = "true" ]; then
+          echo "Pushing training image..."
+          docker tag cyborg-rl-training:$IMAGE_TAG $ECR_BASE_URI/training:$IMAGE_TAG
+          docker push $ECR_BASE_URI/training:$IMAGE_TAG
+          echo "Training image pushed: $ECR_BASE_URI/training:$IMAGE_TAG"
+        fi
+      - |
+        if [ "$BUILD_EVALUATION" = "true" ]; then
+          echo "Pushing evaluation image..."
+          docker tag cyborg-rl-evaluation:$IMAGE_TAG $ECR_BASE_URI/evaluation:$IMAGE_TAG
+          docker push $ECR_BASE_URI/evaluation:$IMAGE_TAG
+          echo "Evaluation image pushed: $ECR_BASE_URI/evaluation:$IMAGE_TAG"
+        fi
+      - echo "Build complete!"
+      - cd /tmp
+
+artifacts:
+  files:
+    - '**/*'
+  name: cyborg-docker-build-artifacts
