@@ -33,6 +33,7 @@ from training.callbacks.checkpoint_callback import CheckpointCallback
 
 # Import algorithm trainers
 from training.algorithms.drqn import train_drqn, get_drqn_default_hyperparameters
+from training.algorithms.recurrent_ppo import train_recurrent_ppo, get_recurrent_ppo_default_hyperparameters
 
 # Setup logging first
 setup_logging()
@@ -117,6 +118,8 @@ def parse_args():
                        help='GAE lambda')
     parser.add_argument('--target_kl', type=float, default=0.01,
                        help='Target KL divergence')
+    parser.add_argument('--normalize_advantage', type=lambda x: str(x).lower() == 'true', default=False,
+                       help='Normalize advantages across batch')
 
     # SageMaker specific
     parser.add_argument('--tensorboard_sync', type=lambda x: str(x).lower() == 'true', default=True,
@@ -234,10 +237,10 @@ def main():
     # Train based on algorithm
     algorithm_trainers = {
         Algorithms.DRQN: train_drqn,
+        Algorithms.RECURRENT_PPO: train_recurrent_ppo,
         # Add other algorithms here
         # Algorithms.DQN: train_dqn,
         # Algorithms.PPO: train_ppo,
-        # Algorithms.RECURRENT_PPO: train_recurrent_ppo,
     }
 
     if args.algorithm not in algorithm_trainers:

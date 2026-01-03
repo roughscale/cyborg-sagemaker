@@ -154,7 +154,9 @@ def load_algorithm_config(algorithm: str, configs_dir: Path) -> Dict[str, Any]:
 def generate_job_name(algorithm: str, prefix: str) -> str:
     """Generate a unique job name with timestamp"""
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    return f"{prefix}-{algorithm}-{timestamp}"
+    # Replace underscores with hyphens for SageMaker job name validation
+    algorithm_normalized = algorithm.replace('_', '-')
+    return f"{prefix}-{algorithm_normalized}-{timestamp}"
 
 
 # ============================================================================
