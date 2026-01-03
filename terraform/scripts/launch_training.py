@@ -261,8 +261,6 @@ class SageMakerTrainingLauncher:
         job_hyperparameters = {
             "algorithm": algorithm,
             "total_steps": str(total_steps),
-            "scenario_name": scenario,
-            "environment_mode": environment_mode,
         }
 
         if seed is not None:
