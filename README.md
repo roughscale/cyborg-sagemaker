@@ -10,6 +10,7 @@ DRQN training pipeline deployed and tested. Infrastructure supports DRQN, DQN, P
 - Terraform infrastructure (IAM, ECR, S3, VPC, CodeBuild)
 - Docker build pipeline with selective image building
 - DRQN and RecurrentPPO training implementations with hyperparameter optimization
+- Simulation and AWS emulation evaluation via SageMaker Processing Jobs
 - CloudWatch metrics and TensorBoard integration
 - S3 checkpointing and model persistence
 - Configuration management (YAML configs, scenarios)
@@ -143,6 +144,44 @@ CloudWatch metrics available in SageMaker console:
 - episode_reward, episode_length, episode_number, total_timesteps
 - exploration_rate, loss, per_beta (DRQN-specific)
 
+### 7. Evaluate a Trained Model
+
+SageMaker Processing Jobs run evaluation using the evaluation container (with Metasploit for AWS emulation):
+
+```bash
+# Simulation evaluation (100 episodes, CPU instance)
+./scripts/launch_evaluation.sh drqn <training-job-name>
+
+# Specify episode count
+./scripts/launch_evaluation.sh recurrent_ppo <training-job-name> 50
+
+# AWS emulation evaluation (requires enable_aws_emulation=true in tfvars)
+./scripts/launch_evaluation.sh drqn <training-job-name> 10 aws
+
+# Full control via Python script
+python scripts/launch_evaluation.py \
+  --algorithm drqn \
+  --training-job-name <training-job-name> \
+  --n-eval-episodes 100 \
+  --environment-mode sim
+
+# Explicit model S3 path
+python scripts/launch_evaluation.py \
+  --algorithm drqn \
+  --model-s3-uri s3://<bucket>/models/drqn/<job-name>/output/ \
+  --n-eval-episodes 100
+```
+
+Evaluation results are saved to `s3://<bucket>/evaluation-results/<job-name>/results.json`:
+```json
+{
+  "mean_reward": 45.2, "std_reward": 12.3,
+  "min_reward": 10.0,  "max_reward": 80.0,
+  "mean_length": 125,  "n_episodes": 100,
+  "episode_rewards": [...], "episode_lengths": [...]
+}
+```
+
 ## Project Structure
 
 ```
@@ -153,7 +192,8 @@ cyborg-sagemaker/
 │   │   └── base-infrastructure/         # ECR, S3, IAM, VPC, CodeBuild
 │   └── scripts/
 │       ├── build_images.sh              # Trigger CodeBuild
-│       ├── launch_training.py           # Launch training via boto3
+│       ├── launch_training.py           # Launch training jobs via boto3
+│       ├── launch_evaluation.py         # Launch evaluation jobs via boto3
 │       └── upload_configs.sh            # Upload configs to S3
 │
 ├── docker/
@@ -170,7 +210,10 @@ cyborg-sagemaker/
 │   │   ├── algorithms/                  # DRQN, RecurrentPPO trainers
 │   │   ├── callbacks/                   # CloudWatch, checkpointing
 │   │   └── utils/                       # Env factory, config, S3
-│   └── evaluation/                      # Evaluation implementation
+│   └── evaluation/
+│       ├── evaluate.py                  # Entry point (Processing Job)
+│       ├── evaluators/                  # sim_evaluator, aws_evaluator
+│       └── utils/                       # model_loader, metrics
 │
 └── configs/
     ├── algorithms/                      # DRQN, RecurrentPPO hyperparameters
@@ -225,4 +268,4 @@ Inherits licenses from CybORG, Stable-Baselines3 (MIT), and AWS SageMaker (AWS C
 
 ---
 
-**Last Updated:** 2026-01-03
+**Last Updated:** 2026-07-01
