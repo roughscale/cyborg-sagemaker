@@ -9,7 +9,7 @@ DRQN training pipeline deployed and tested. Infrastructure supports DRQN, DQN, P
 **Completed:**
 - Terraform infrastructure (IAM, ECR, S3, VPC, CodeBuild)
 - Docker build pipeline with selective image building
-- DRQN training implementation with hyperparameter optimization
+- DRQN and RecurrentPPO training implementations with hyperparameter optimization
 - CloudWatch metrics and TensorBoard integration
 - S3 checkpointing and model persistence
 - Configuration management (YAML configs, scenarios)
@@ -167,14 +167,14 @@ cyborg-sagemaker/
 │   ├── common/                          # Shared constants and logging
 │   ├── training/
 │   │   ├── train.py                     # Entry point (reads env vars)
-│   │   ├── algorithms/                  # DRQN trainer
+│   │   ├── algorithms/                  # DRQN, RecurrentPPO trainers
 │   │   ├── callbacks/                   # CloudWatch, checkpointing
 │   │   └── utils/                       # Env factory, config, S3
 │   └── evaluation/                      # Evaluation implementation
 │
 └── configs/
-    ├── algorithms/                      # DRQN hyperparameters
-    └── environments/scenarios/          # DRQN scenario
+    ├── algorithms/                      # DRQN, RecurrentPPO hyperparameters
+    └── environments/scenarios/          # DRQN, RecurrentPPO scenarios
 ```
 
 ## Key Technologies
@@ -217,10 +217,7 @@ The `--training-only`, `--base-only`, and `--evaluation-only` flags control whic
 **Custom Forks:**
 - [stable-baselines3](https://github.com/roughscale/stable-baselines3)
 - [stable-baselines3-contrib](https://github.com/roughscale/stable-baselines3-contrib) (DRQN with full episode support)
-
-**Source Code:**
-- CybORG: `/home/boloughlin/projects/roughscale/research/rl/cyborg/CybORG/CybORG/`
-- Reference: `/home/boloughlin/projects/roughscale/research/rl/cyborg/CybORG/openai_*_msf_test.py`
+- [cyborg](https://github.com/roughscale/cyborg)
 
 ## License
 
