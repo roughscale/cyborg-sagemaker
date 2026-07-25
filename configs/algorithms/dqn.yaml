@@ -1,17 +1,18 @@
 # DQN Configuration for CybORG RL Training
-# Standard Deep Q-Network (non-recurrent, fully-connected policy)
+# Double DQN with Dueling policy and Prioritized Experience Replay
+# Uses fully observable environment (fully_obs: true) since DQN has no recurrent memory
 
 # Environment Configuration
-fully_obs: false
+fully_obs: true   # DQN has no recurrent memory — full state needed for MDP
 randomize_env: false
 
 max_params:
   MAX_HOSTS: 5
-  MAX_PROCESSES: 2
+  MAX_PROCESSES: 5
   MAX_CONNECTIONS: 2
   MAX_VULNERABILITIES: 1
   MAX_INTERFACES: 2
-  MAX_SESSIONS: 3
+  MAX_SESSIONS: 5
   MAX_USERS: 5
   MAX_FILES: 0
   MAX_GROUPS: 0
@@ -26,13 +27,17 @@ hyperparameters:
   # DQN parameters
   batch_size: 32
   initial_epsilon: 1.0
-  final_epsilon: 0.05
-  exploration_fraction: 0.5  # Shorter exploration than DRQN (no recurrent memory to warm up)
+  final_epsilon: 0.02
+  exploration_fraction: 0.9
+
+  # PER (Prioritized Experience Replay)
+  prioritized_replay_alpha: 0.9
+  prioritized_replay_beta0: 0.4
 
 # Network Architecture
 network:
   type: mlp
-  # Architecture dynamically set to [input_size, input_size]
+  # Single hidden layer, same size as input (matches RedDQNAgent)
   hidden_size: input
 
 # Training Configuration

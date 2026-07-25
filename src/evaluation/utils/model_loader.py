@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 # Maps algorithm name → (module, class) for SB3 load()
 _ALGORITHM_CLASSES = {
     'drqn': ('sb3_contrib.drqn.drqn', 'DoubleDRQN'),
+    'dqn': ('sb3_contrib.ddqn.ddqn', 'DoubleDQN'),
     'recurrent_ppo': ('sb3_contrib.ppo_recurrent', 'RecurrentPPO'),
-    'dqn': ('stable_baselines3', 'DQN'),
     'ppo': ('stable_baselines3', 'PPO'),
 }
 
