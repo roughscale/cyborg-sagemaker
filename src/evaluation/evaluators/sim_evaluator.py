@@ -27,8 +27,13 @@ def evaluate(model: Any, env, n_episodes: int, deterministic: bool = True) -> Di
 
     start = time.time()
 
+    # Pass model.policy rather than model: the roughscale SB3 forks (DoubleDQN,
+    # DoubleDRQN) return a 3-tuple (action, state, computed) from model.predict()
+    # to expose whether the action was computed or epsilon-greedy random. The
+    # policy's predict() returns the standard (action, state) pair and is
+    # equivalent to model.predict() when deterministic=True.
     rewards, lengths = evaluate_policy(
-        model,
+        model.policy,
         env,
         n_eval_episodes=n_episodes,
         deterministic=deterministic,
