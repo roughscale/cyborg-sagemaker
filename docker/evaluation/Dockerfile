@@ -49,9 +49,10 @@ RUN git clone ${CYBORG_REPO} /opt/cyborg && \
 # Copy CybORG source to working directory
 COPY cyborg/CybORG/CybORG /opt/ml/code/CybORG
 
-# Copy evaluation source code
+# Copy source code (training utils needed for env_factory and config_loader)
 COPY cyborg-sagemaker/src/evaluation /opt/ml/code/evaluation
 COPY cyborg-sagemaker/src/common /opt/ml/code/common
+COPY cyborg-sagemaker/src/training /opt/ml/code/training
 
 # Set working directory
 WORKDIR /opt/ml/processing
