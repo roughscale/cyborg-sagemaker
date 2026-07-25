@@ -1,0 +1,46 @@
+# DQN Configuration for CybORG RL Training
+# Standard Deep Q-Network (non-recurrent, fully-connected policy)
+
+# Environment Configuration
+fully_obs: false
+randomize_env: false
+
+max_params:
+  MAX_HOSTS: 5
+  MAX_PROCESSES: 2
+  MAX_CONNECTIONS: 2
+  MAX_VULNERABILITIES: 1
+  MAX_INTERFACES: 2
+  MAX_SESSIONS: 3
+  MAX_USERS: 5
+  MAX_FILES: 0
+  MAX_GROUPS: 0
+  MAX_PATCHES: 0
+
+# Default Hyperparameters
+hyperparameters:
+  # Core RL parameters
+  gamma: 0.99
+  learning_rate: 0.0001
+
+  # DQN parameters
+  batch_size: 32
+  initial_epsilon: 1.0
+  final_epsilon: 0.05
+  exploration_fraction: 0.5  # Shorter exploration than DRQN (no recurrent memory to warm up)
+
+# Network Architecture
+network:
+  type: mlp
+  # Architecture dynamically set to [input_size, input_size]
+  hidden_size: input
+
+# Training Configuration
+training:
+  total_steps: 200000
+  n_envs: 1
+  checkpoint_freq: 10000
+  device: auto
+
+# Scenario Configuration
+scenario: dqn_scenario.yaml
