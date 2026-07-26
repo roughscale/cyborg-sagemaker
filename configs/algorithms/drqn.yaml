@@ -31,8 +31,8 @@ hyperparameters:
   exploration_fraction: 0.9
 
   # DRQN-specific parameters
-  num_prev_seq: 20  # Number of previous transitions in sequence (matches openai_drqn_msf_test.py)
-  use_full_episodes: true  # Use full episode sequences for training
+  num_prev_seq: 40  # Number of previous transitions in sequence
+  use_full_episodes: false  # Use full episode sequences for training
   double: true      # Use Double DQN to prevent Q-value overestimation
   dueling: true     # Use Dueling architecture (separate V and A streams)
 
