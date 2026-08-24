@@ -8,7 +8,7 @@ ARG SB3_BRANCH=master
 ARG SB3_CONTRIB_REPO=https://github.com/roughscale/stable-baselines3-contrib.git
 ARG SB3_CONTRIB_BRANCH=master
 ARG CYBORG_REPO=https://github.com/roughscale/cyborg.git
-ARG CYBORG_BRANCH=main
+ARG CYBORG_BRANCH=develop
 
 USER root
 
