@@ -22,21 +22,6 @@ RUN pip install --no-cache-dir sagemaker-training
 
 # Install all Python dependencies for SB3, SB3-contrib, and CybORG
 # This includes all dependencies so that pip install -e in training image is fast
-# Clone and install custom stable-baselines3 fork
-RUN git clone ${SB3_REPO} /opt/stable-baselines3 && \
-    cd /opt/stable-baselines3 && \
-    git checkout ${SB3_BRANCH} && \
-    echo "stable-baselines3: $(git rev-parse HEAD)" && \
-    pip install --no-cache-dir -e .
-
-# Clone and install custom sb3-contrib fork
-RUN git clone ${SB3_CONTRIB_REPO} /opt/stable-baselines3-contrib && \
-    cd /opt/stable-baselines3-contrib && \
-    git checkout ${SB3_CONTRIB_BRANCH} && \
-    echo "stable-baselines3-contrib: $(git rev-parse HEAD)" && \
-    pip install --no-cache-dir -e .
-
-# Install CybORG dependencies
 COPY cyborg-sagemaker/docker/base/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
     rm /tmp/requirements.txt

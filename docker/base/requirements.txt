@@ -1,7 +1,6 @@
 # Core ML/RL dependencies (stable-baselines3 requirements)
 gymnasium==0.29.1
 numpy>=1.20
-pandas
 matplotlib>=3.5
 cloudpickle
 pandas

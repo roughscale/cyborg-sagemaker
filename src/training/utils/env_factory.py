@@ -12,6 +12,7 @@ from CybORG import CybORG
 from CybORG.Agents.Wrappers.EnumActionWrapper import EnumActionWrapper
 from CybORG.Agents.Wrappers.FixedFlatWrapper import FixedFlatWrapper
 from CybORG.Agents.Wrappers.OpenAIGymWrapper import OpenAIGymWrapper
+from CybORG.Agents.Wrappers.ObsHistoryWrapper import ObsHistoryWrapper
 from stable_baselines3.common.env_util import make_vec_env
 
 logger = logging.getLogger(__name__)
@@ -77,9 +78,13 @@ def create_cyborg_environment(
         # Create base CybORG environment
         cyborg = CybORG(scenario_path, mode, env_config=env_config)
 
+        # ObsHistoryWrapper accumulates partial observations into a full belief state.
+        # Used instead of fully_obs=True so the wrapper chain remains self-contained.
+        base = ObsHistoryWrapper(cyborg, agents=[agent_name]) if env_config.get('use_obs_history', False) else cyborg
+
         # Apply wrapper chain
         # 1. EnumActionWrapper: Discrete action space
-        enum_wrapped = EnumActionWrapper(cyborg)
+        enum_wrapped = EnumActionWrapper(base)
 
         # 2. FixedFlatWrapper: Fixed-size observation vectors
         flat_wrapped = FixedFlatWrapper(

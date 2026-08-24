@@ -1,0 +1,59 @@
+# PPO Configuration for CybORG RL Training
+# Proximal Policy Optimization (MLP policy, fully observable via ObsHistoryWrapper)
+
+# Environment Configuration
+# ObsHistoryWrapper accumulates partial observations into a full belief state,
+# equivalent to fully_obs=True but implemented at the wrapper level.
+use_obs_history: true
+randomize_env: false
+
+max_params:
+  MAX_HOSTS: 5
+  MAX_PROCESSES: 5
+  MAX_CONNECTIONS: 2
+  MAX_VULNERABILITIES: 1
+  MAX_INTERFACES: 2
+  MAX_SESSIONS: 5
+  MAX_USERS: 5
+  MAX_FILES: 0
+  MAX_GROUPS: 0
+  MAX_PATCHES: 0
+
+# Default Hyperparameters
+hyperparameters:
+  # Core RL parameters
+  gamma: 0.99
+  learning_rate: 0.0001
+
+  # PPO parameters
+  n_steps: 1024           # Number of steps per rollout
+  batch_size: 1024        # Minibatch size (must be multiple of n_steps * n_envs)
+  n_epochs: 10            # Number of epochs per update
+  clip_range: 0.1         # PPO clip range (0.2 is default, 0.1 more conservative)
+
+  # Advantage estimation
+  gae_lambda: 1.0         # GAE lambda (1.0 = no bias, 0.95 default)
+  normalize_advantage: false  # Normalize advantages across batch
+
+  # Loss coefficients
+  ent_coef: 0.0           # Entropy coefficient for exploration
+  vf_coef: 1.0            # Value function loss coefficient (0.5 default)
+
+  # Early stopping
+  target_kl: 0.01         # Target KL divergence for early stopping
+
+# Network Architecture
+network:
+  type: mlp
+  # Architecture is dynamically set to [input_size, input_size]
+  hidden_size: input
+
+# Training Configuration
+training:
+  total_steps: 400000
+  n_envs: 1
+  checkpoint_freq: 10000
+  device: auto
+
+# Scenario Configuration
+scenario: ppo_scenario.yaml

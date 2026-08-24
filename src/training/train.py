@@ -35,6 +35,7 @@ from training.callbacks.checkpoint_callback import CheckpointCallback
 from training.algorithms.drqn import train_drqn, get_drqn_default_hyperparameters
 from training.algorithms.dqn import train_dqn, get_dqn_default_hyperparameters
 from training.algorithms.recurrent_ppo import train_recurrent_ppo, get_recurrent_ppo_default_hyperparameters
+from training.algorithms.ppo import train_ppo, get_ppo_default_hyperparameters
 
 # Setup logging first
 setup_logging()
