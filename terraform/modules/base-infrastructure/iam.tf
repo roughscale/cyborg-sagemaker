@@ -1,6 +1,6 @@
 # SageMaker execution role
 resource "aws_iam_role" "sagemaker_execution_role" {
-  name = "${var.project_name}-${var.environment}-sagemaker-execution-role"
+  name = "${var.project_name}-${var.environment}${var.region_suffix}-sagemaker-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

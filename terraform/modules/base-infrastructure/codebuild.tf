@@ -3,7 +3,7 @@
 
 # IAM role for CodeBuild
 resource "aws_iam_role" "codebuild_role" {
-  name = "${var.project_name}-${var.environment}-codebuild-role"
+  name = "${var.project_name}-${var.environment}${var.region_suffix}-codebuild-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

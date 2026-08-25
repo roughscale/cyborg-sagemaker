@@ -54,3 +54,9 @@ variable "cyborg_branch" {
   type        = string
   default     = "main"
 }
+
+variable "region_suffix" {
+  description = "Suffix added to globally-scoped resource names (IAM, S3) to avoid cross-region conflicts. Empty for the default workspace."
+  type        = string
+  default     = ""
+}

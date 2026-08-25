@@ -14,8 +14,12 @@ terraform {
   }
 }
 
+locals {
+  aws_region = terraform.workspace == "default" ? var.aws_region : terraform.workspace
+}
+
 provider "aws" {
-  region = var.aws_region
+  region = local.aws_region
 
   default_tags {
     tags = var.tags
@@ -33,6 +37,7 @@ module "base_infrastructure" {
 
   project_name           = var.project_name
   environment            = var.environment
+  region_suffix          = terraform.workspace == "default" ? "" : "-${local.aws_region}"
   enable_aws_emulation   = var.enable_aws_emulation
   vpc_cidr               = var.vpc_cidr
   availability_zones     = var.availability_zones

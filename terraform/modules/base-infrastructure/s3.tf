@@ -6,7 +6,7 @@ data "aws_region" "current" {}
 
 # Main S3 bucket for all artifacts
 resource "aws_s3_bucket" "artifacts" {
-  bucket = "${var.project_name}-${var.environment}-artifacts-${data.aws_caller_identity.current.account_id}"
+  bucket = "${var.project_name}-${var.environment}-artifacts-${data.aws_caller_identity.current.account_id}${var.region_suffix}"
 
   tags = merge(
     var.tags,
