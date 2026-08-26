@@ -37,7 +37,7 @@ def create_cyborg_environment(
     Args:
         scenario_path: Path to scenario YAML file
         mode: Environment mode ('sim' or 'aws')
-        env_config: Environment configuration dict with 'fully_obs', 'max_params', etc.
+        env_config: Environment configuration dict with 'use_obs_history', 'max_params', etc.
         n_envs: Number of parallel environments
         agent_name: Name of agent to control (typically "Red")
 
@@ -49,7 +49,7 @@ def create_cyborg_environment(
         ...     scenario_path="/opt/ml/input/data/scenarios/drqn_scenario.yaml",
         ...     mode='sim',
         ...     env_config={
-        ...         "fully_obs": False,
+        ...         "use_obs_history": True,
         ...         "max_params": {
         ...             "MAX_HOSTS": 5,
         ...             "MAX_PROCESSES": 2,
@@ -66,7 +66,7 @@ def create_cyborg_environment(
     logger.info(f"Mode: {mode}")
     logger.info(f"Number of parallel environments: {n_envs}")
     logger.info(f"Agent: {agent_name}")
-    logger.info(f"Fully observable: {env_config.get('fully_obs', False)}")
+    logger.info(f"Obs history wrapper: {env_config.get('use_obs_history', False)}")
 
     # Verify scenario file exists
     scenario_file = Path(scenario_path)
@@ -78,8 +78,6 @@ def create_cyborg_environment(
         # Create base CybORG environment
         cyborg = CybORG(scenario_path, mode, env_config=env_config)
 
-        # ObsHistoryWrapper accumulates partial observations into a full belief state.
-        # Used instead of fully_obs=True so the wrapper chain remains self-contained.
         base = ObsHistoryWrapper(cyborg, agents=[agent_name]) if env_config.get('use_obs_history', False) else cyborg
 
         # Apply wrapper chain
@@ -117,7 +115,7 @@ def _get_default_env_config() -> Dict[str, Any]:
         Default environment config dict
     """
     return {
-        "fully_obs": False,
+        "use_obs_history": True,
         "randomize_env": False,
         "max_params": {
             "MAX_HOSTS": 5,

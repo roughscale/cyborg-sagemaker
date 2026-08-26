@@ -2,7 +2,7 @@
 # Deep Recurrent Q-Network with Double and Dueling enhancements
 
 # Environment Configuration
-fully_obs: false  # Partial observability (POMDP)
+use_obs_history: false  # DRQN uses raw partial obs; recurrent network handles the POMDP
 randomize_env: false
 
 max_params:
@@ -66,7 +66,7 @@ training:
 scenario: drqn_scenario.yaml
 
 # Notes:
-# - This config uses partial observability (fully_obs: false) which makes the task harder
+# - This config uses partial observability (use_obs_history: false) which makes the task harder
 #   but is more realistic for the DRQN architecture
 # - The double and dueling flags enable state-of-the-art DQN enhancements
 # - num_prev_seq=20 means each training sample includes 20 consecutive transitions

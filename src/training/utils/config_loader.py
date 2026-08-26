@@ -83,12 +83,12 @@ def extract_env_config(full_config: Dict[str, Any]) -> Dict[str, Any]:
         full_config: Full configuration dictionary
 
     Returns:
-        Environment configuration with 'fully_obs', 'max_params', etc.
+        Environment configuration with 'use_obs_history', 'max_params', etc.
     """
     env_config = {}
 
     # Extract environment-specific keys
-    env_keys = ['fully_obs', 'randomize_env', 'max_params', 'use_obs_history']
+    env_keys = ['randomize_env', 'max_params', 'use_obs_history']
     for key in env_keys:
         if key in full_config:
             env_config[key] = full_config[key]

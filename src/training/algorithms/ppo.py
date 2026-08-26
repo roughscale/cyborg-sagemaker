@@ -14,8 +14,7 @@ def train_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
     """Train PPO agent.
 
     Uses ObsHistoryWrapper (via env_factory) to accumulate partial observations
-    into a full belief state, equivalent to the fully_obs=True approach used in
-    the reference openai_ppo_msf_test.py script.
+    into a full belief state.
 
     Args:
         env: Vectorized CybORG environment (wrapped with ObsHistoryWrapper)

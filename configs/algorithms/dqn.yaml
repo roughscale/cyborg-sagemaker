@@ -1,10 +1,7 @@
 # DQN Configuration for CybORG RL Training
 # Double DQN with Dueling policy and Prioritized Experience Replay
-# Uses fully observable environment (fully_obs: true) since DQN has no recurrent memory
 
 # Environment Configuration
-# ObsHistoryWrapper accumulates partial observations into a full belief state,
-# equivalent to fully_obs=True but implemented at the wrapper level.
 use_obs_history: true
 randomize_env: false
 

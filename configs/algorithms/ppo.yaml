@@ -2,8 +2,6 @@
 # Proximal Policy Optimization (MLP policy, fully observable via ObsHistoryWrapper)
 
 # Environment Configuration
-# ObsHistoryWrapper accumulates partial observations into a full belief state,
-# equivalent to fully_obs=True but implemented at the wrapper level.
 use_obs_history: true
 randomize_env: false
 
@@ -32,15 +30,12 @@ hyperparameters:
   clip_range: 0.1         # PPO clip range (0.2 is default, 0.1 more conservative)
 
   # Advantage estimation
-  gae_lambda: 1.0         # GAE lambda (1.0 = no bias, 0.95 default)
-  normalize_advantage: false  # Normalize advantages across batch
+  gae_lambda: 0.95        # GAE lambda (0.95 default, reduces variance vs 1.0)
+  normalize_advantage: true   # Normalize advantages across batch
 
   # Loss coefficients
-  ent_coef: 0.0           # Entropy coefficient for exploration
+  ent_coef: 0.01          # Entropy coefficient for exploration (encourages diverse actions)
   vf_coef: 1.0            # Value function loss coefficient (0.5 default)
-
-  # Early stopping
-  target_kl: 0.01         # Target KL divergence for early stopping
 
 # Network Architecture
 network:

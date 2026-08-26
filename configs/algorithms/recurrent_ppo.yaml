@@ -2,7 +2,7 @@
 # Proximal Policy Optimization with LSTM for partial observability
 
 # Environment Configuration
-fully_obs: false  # Partial observability (POMDP)
+use_obs_history: false  # RecurrentPPO uses raw partial obs; LSTM handles the POMDP
 randomize_env: false
 
 max_params:
@@ -64,7 +64,7 @@ training:
 scenario: recurrent_ppo_scenario.yaml
 
 # Notes:
-# - This config uses partial observability (fully_obs: false) which makes the task harder
+# - This config uses partial observability (use_obs_history: false) which makes the task harder
 #   but is realistic for the Recurrent PPO architecture with LSTM
 # - n_steps=1024 means the agent collects 1024 steps before each update
 # - batch_size=1024 must be a multiple of n_steps * n_envs
