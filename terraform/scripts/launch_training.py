@@ -168,7 +168,12 @@ class SageMakerTrainingLauncher:
 
     def __init__(self, terraform_dir: Path, aws_region: Optional[str] = None):
         self.terraform_dir = terraform_dir
-        self.aws_region = aws_region or os.environ.get('AWS_REGION') or 'ap-southeast-2'
+        self.aws_region = (
+            aws_region
+            or os.environ.get('AWS_REGION')
+            or get_terraform_output("aws_region", terraform_dir)
+            or 'ap-southeast-2'
+        )
 
         # Initialize boto3 clients
         self.sagemaker = boto3.client('sagemaker', region_name=self.aws_region)
