@@ -8,7 +8,7 @@ from pathlib import Path
 # Add CybORG to path if running in SageMaker
 sys.path.insert(0, '/opt/ml/code')
 
-from gymnasium.wrappers import TimeLimit
+from gym.wrappers import TimeLimit
 from CybORG import CybORG
 from CybORG.Agents.Wrappers.EnumActionWrapper import EnumActionWrapper
 from CybORG.Agents.Wrappers.FixedFlatWrapper import FixedFlatWrapper
