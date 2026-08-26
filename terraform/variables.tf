@@ -65,7 +65,7 @@ variable "cyborg_repository_url" {
 variable "cyborg_branch" {
   description = "Git branch for CybORG repository"
   type        = string
-  default     = "main"
+  default     = "develop"
 }
 
 # Common Tags

@@ -52,7 +52,7 @@ variable "cyborg_repository_url" {
 variable "cyborg_branch" {
   description = "Git branch to use for CybORG repository"
   type        = string
-  default     = "main"
+  default     = "develop"
 }
 
 variable "region_suffix" {
