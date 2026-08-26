@@ -28,7 +28,7 @@ hyperparameters:
   n_steps: 1024           # Number of steps per rollout
   batch_size: 256         # 4 minibatches per epoch (40 gradient steps per rollout)
   n_epochs: 10            # Number of epochs per update
-  clip_range: 0.1         # PPO clip range (0.2 is default, 0.1 more conservative)
+  clip_range: 0.05        # tighter constraint per step to prevent catastrophic collapse
 
   # Advantage estimation
   gae_lambda: 0.95        # GAE lambda (0.95 default, reduces variance vs 1.0)
