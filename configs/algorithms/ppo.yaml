@@ -22,11 +22,11 @@ max_params:
 hyperparameters:
   # Core RL parameters
   gamma: 0.99
-  learning_rate: 0.0001
+  learning_rate: 0.00003
 
   # PPO parameters
   n_steps: 1024           # Number of steps per rollout
-  batch_size: 1024        # Minibatch size (must be multiple of n_steps * n_envs)
+  batch_size: 256         # 4 minibatches per epoch (40 gradient steps per rollout)
   n_epochs: 10            # Number of epochs per update
   clip_range: 0.1         # PPO clip range (0.2 is default, 0.1 more conservative)
 
@@ -36,7 +36,7 @@ hyperparameters:
 
   # Loss coefficients
   ent_coef: 0.01          # Entropy coefficient for exploration (encourages diverse actions)
-  vf_coef: 1.0            # Value function loss coefficient (0.5 default)
+  vf_coef: 0.5            # Value function loss coefficient (SB3 default)
 
 # Network Architecture
 network:
