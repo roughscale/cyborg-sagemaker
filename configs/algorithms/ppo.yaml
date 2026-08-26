@@ -4,6 +4,7 @@
 # Environment Configuration
 use_obs_history: true
 randomize_env: false
+max_steps: 1000
 
 max_params:
   MAX_HOSTS: 5

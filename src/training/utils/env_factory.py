@@ -8,6 +8,7 @@ from pathlib import Path
 # Add CybORG to path if running in SageMaker
 sys.path.insert(0, '/opt/ml/code')
 
+from gymnasium.wrappers import TimeLimit
 from CybORG import CybORG
 from CybORG.Agents.Wrappers.EnumActionWrapper import EnumActionWrapper
 from CybORG.Agents.Wrappers.FixedFlatWrapper import FixedFlatWrapper
@@ -67,6 +68,9 @@ def create_cyborg_environment(
     logger.info(f"Number of parallel environments: {n_envs}")
     logger.info(f"Agent: {agent_name}")
     logger.info(f"Obs history wrapper: {env_config.get('use_obs_history', False)}")
+    max_steps = env_config.get('max_steps')
+    if max_steps:
+        logger.info(f"Max episode steps: {max_steps}")
 
     # Verify scenario file exists
     scenario_file = Path(scenario_path)
@@ -96,6 +100,12 @@ def create_cyborg_environment(
             agent_name=agent_name
         )
 
+        # 4. TimeLimit: Cap episode length so SB3 bootstraps correctly at truncation.
+        #    Uses gymnasium's TimeLimit contract (info["TimeLimit.truncated"] + terminal_observation)
+        #    rather than setting terminated=True, which would incorrectly zero the value estimate.
+        if max_steps:
+            return TimeLimit(gym_wrapped, max_episode_steps=max_steps)
+
         return gym_wrapped
 
     # Create vectorized environment
@@ -117,6 +127,7 @@ def _get_default_env_config() -> Dict[str, Any]:
     return {
         "use_obs_history": True,
         "randomize_env": False,
+        "max_steps": None,
         "max_params": {
             "MAX_HOSTS": 5,
             "MAX_PROCESSES": 2,
