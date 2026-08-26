@@ -37,6 +37,7 @@ hyperparameters:
   # Loss coefficients
   ent_coef: 0.01          # Entropy coefficient for exploration (encourages diverse actions)
   vf_coef: 0.5            # Value function loss coefficient (SB3 default)
+  target_kl: 0.01         # early stopping threshold (epoch stops if mean approx_kl > 1.5 * target_kl)
 
 # Network Architecture
 network:
