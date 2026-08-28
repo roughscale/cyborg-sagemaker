@@ -16,6 +16,7 @@ import json
 import argparse
 import logging
 from pathlib import Path
+from typing import Optional, Tuple
 
 # Add CybORG to path
 sys.path.insert(0, '/opt/ml/code')
@@ -145,6 +146,26 @@ def parse_args():
     return args
 
 
+def find_latest_checkpoint(checkpoint_dir: Path) -> Tuple[Optional[Path], int]:
+    """Scan checkpoint_dir for the highest-numbered checkpoint.
+
+    SageMaker restores /opt/ml/checkpoints from S3 before the training script
+    starts, so any file here means a prior spot run was interrupted.
+
+    Returns:
+        (checkpoint_path, completed_timesteps) — path is None if no checkpoint found.
+    """
+    checkpoints = sorted(
+        checkpoint_dir.glob("checkpoint_[0-9]*.zip"),
+        key=lambda p: int(p.stem.split('_')[1])
+    )
+    if not checkpoints:
+        return None, 0
+    latest = checkpoints[-1]
+    completed = int(latest.stem.split('_')[1])
+    return latest, completed
+
+
 def get_s3_bucket() -> str:
     """Get S3 bucket name from environment or Terraform output.
 
@@ -234,6 +255,20 @@ def main():
     callbacks.append(checkpoint_callback)
 
     logger.info(f"Configured {len(callbacks)} training callbacks")
+    logger.info("")
+
+    # Detect spot instance resume — SageMaker restores /opt/ml/checkpoints from S3
+    checkpoint_dir = Path(SageMakerPaths.CHECKPOINT_DIR)
+    resume_checkpoint_path, completed_timesteps = find_latest_checkpoint(checkpoint_dir)
+    args.resume_checkpoint_path = str(resume_checkpoint_path) if resume_checkpoint_path else None
+    args.completed_timesteps = completed_timesteps
+
+    if resume_checkpoint_path:
+        logger.info(f"Spot resume detected: checkpoint at step {completed_timesteps}")
+        logger.info(f"  Checkpoint: {resume_checkpoint_path}")
+        logger.info(f"  Remaining steps: {args.total_steps - completed_timesteps}")
+    else:
+        logger.info("No checkpoint found — starting fresh training run")
     logger.info("")
 
     # Train based on algorithm

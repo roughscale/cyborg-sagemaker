@@ -73,37 +73,51 @@ def train_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
     logger.info("=" * 80)
     logger.info("")
 
-    logger.info("Creating PPO model...")
-    model = PPO(
-        policy=MlpPolicy,
-        env=env,
-        learning_rate=lr_schedule,
-        n_steps=args.n_steps,
-        batch_size=args.batch_size,
-        n_epochs=args.n_epochs,
-        gamma=args.gamma,
-        gae_lambda=args.gae_lambda,
-        clip_range=args.clip_range,
-        normalize_advantage=args.normalize_advantage,
-        ent_coef=args.ent_coef,
-        vf_coef=args.vf_coef,
-        max_grad_norm=0.5,
-        target_kl=args.target_kl,
-        tensorboard_log="/opt/ml/output/tensorboard",
-        policy_kwargs={"net_arch": net_arch},
-        verbose=1,
-        seed=args.seed,
-        device=args.device,
-        _init_setup_model=True,
-    )
+    resume_checkpoint = getattr(args, 'resume_checkpoint_path', None)
+    completed_timesteps = getattr(args, 'completed_timesteps', 0)
+    remaining_steps = args.total_steps - completed_timesteps
 
-    logger.info("PPO model created successfully")
+    if resume_checkpoint:
+        logger.info(f"Resuming from checkpoint: {resume_checkpoint}")
+        model = PPO.load(
+            resume_checkpoint,
+            env=env,
+            device=args.device,
+            verbose=1,
+        )
+        model.tensorboard_log = "/opt/ml/output/tensorboard"
+    else:
+        logger.info("Creating PPO model...")
+        model = PPO(
+            policy=MlpPolicy,
+            env=env,
+            learning_rate=lr_schedule,
+            n_steps=args.n_steps,
+            batch_size=args.batch_size,
+            n_epochs=args.n_epochs,
+            gamma=args.gamma,
+            gae_lambda=args.gae_lambda,
+            clip_range=args.clip_range,
+            normalize_advantage=args.normalize_advantage,
+            ent_coef=args.ent_coef,
+            vf_coef=args.vf_coef,
+            max_grad_norm=0.5,
+            target_kl=args.target_kl,
+            tensorboard_log="/opt/ml/output/tensorboard",
+            policy_kwargs={"net_arch": net_arch},
+            verbose=1,
+            seed=args.seed,
+            device=args.device,
+            _init_setup_model=True,
+        )
+
+    logger.info("PPO model ready")
     logger.info("")
-    logger.info(f"Starting training for {args.total_steps} timesteps...")
+    logger.info(f"Starting training for {remaining_steps} timesteps (completed: {completed_timesteps})...")
     logger.info("=" * 80)
 
     model.learn(
-        total_timesteps=args.total_steps,
+        total_timesteps=remaining_steps,
         log_interval=1,
         callback=callbacks,
     )
