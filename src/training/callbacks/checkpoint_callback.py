@@ -31,6 +31,7 @@ class CheckpointCallback(BaseCallback):
         s3_bucket: Optional[str] = None,
         s3_prefix: Optional[str] = None,
         name_prefix: str = "checkpoint",
+        timestep_offset: int = 0,
         verbose: int = 0
     ):
         super().__init__(verbose)
@@ -40,6 +41,7 @@ class CheckpointCallback(BaseCallback):
         self.s3_bucket = s3_bucket
         self.s3_prefix = s3_prefix
         self.name_prefix = name_prefix
+        self.timestep_offset = timestep_offset
         self.checkpoints_saved = 0
 
         # Initialize S3 client if bucket provided
@@ -88,7 +90,7 @@ class CheckpointCallback(BaseCallback):
         Returns:
             Path object for checkpoint file
         """
-        filename = f"{self.name_prefix}_{self.num_timesteps}.zip"
+        filename = f"{self.name_prefix}_{self.num_timesteps + self.timestep_offset}.zip"
         return self.checkpoint_dir / filename
 
     def _upload_to_s3(self, checkpoint_path: Path) -> bool:

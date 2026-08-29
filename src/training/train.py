@@ -238,25 +238,6 @@ def main():
     logger.info("Environment created successfully")
     logger.info("")
 
-    # Setup callbacks
-    callbacks = [
-        SageMakerCallback(verbose=1)
-    ]
-
-    # Add checkpoint callback
-    s3_bucket = get_s3_bucket()
-    checkpoint_callback = CheckpointCallback(
-        checkpoint_dir=SageMakerPaths.CHECKPOINT_DIR,
-        save_freq=args.checkpoint_freq,
-        s3_bucket=s3_bucket,
-        s3_prefix=f"checkpoints/{args.algorithm}",
-        verbose=1
-    )
-    callbacks.append(checkpoint_callback)
-
-    logger.info(f"Configured {len(callbacks)} training callbacks")
-    logger.info("")
-
     # Detect spot instance resume — SageMaker restores /opt/ml/checkpoints from S3
     checkpoint_dir = Path(SageMakerPaths.CHECKPOINT_DIR)
     resume_checkpoint_path, completed_timesteps = find_latest_checkpoint(checkpoint_dir)
@@ -269,6 +250,27 @@ def main():
         logger.info(f"  Remaining steps: {args.total_steps - completed_timesteps}")
     else:
         logger.info("No checkpoint found — starting fresh training run")
+    logger.info("")
+
+    # Setup callbacks
+    callbacks = [
+        SageMakerCallback(verbose=1)
+    ]
+
+    # Add checkpoint callback — timestep_offset ensures absolute step numbers in filenames
+    # after a spot resume (model.num_timesteps resets to 0 on load)
+    s3_bucket = get_s3_bucket()
+    checkpoint_callback = CheckpointCallback(
+        checkpoint_dir=SageMakerPaths.CHECKPOINT_DIR,
+        save_freq=args.checkpoint_freq,
+        s3_bucket=s3_bucket,
+        s3_prefix=f"checkpoints/{args.algorithm}",
+        timestep_offset=completed_timesteps,
+        verbose=1
+    )
+    callbacks.append(checkpoint_callback)
+
+    logger.info(f"Configured {len(callbacks)} training callbacks")
     logger.info("")
 
     # Train based on algorithm
