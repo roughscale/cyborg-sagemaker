@@ -20,11 +20,11 @@ max_params:
 
 hyperparameters:
   gamma: 0.99
-  learning_rate: 0.00003
+  learning_rate: 0.0001
 
   n_steps: 2048
-  batch_size: 512         # 4 minibatches per epoch
-  n_epochs: 4             # 16 gradient steps per rollout (vs 40 before) — fewer updates on ~4-5 episodes
+  batch_size: 512
+  n_epochs: 4
   clip_range: 0.05        # tight constraint to prevent catastrophic collapse
 
   gae_lambda: 0.95
@@ -41,7 +41,7 @@ network:
   lstm_num_layers: 1
 
 training:
-  total_steps: 750000
+  total_steps: 1500000
   n_envs: 1
   checkpoint_freq: 10000
   device: auto
