@@ -22,22 +22,23 @@ hyperparameters:
   gamma: 0.99
   learning_rate: 0.00003
 
-  n_steps: 1024
-  batch_size: 256         # 4 minibatches per epoch
-  n_epochs: 10
+  n_steps: 2048
+  batch_size: 512         # 4 minibatches per epoch
+  n_epochs: 4             # 16 gradient steps per rollout (vs 40 before) — fewer updates on ~4-5 episodes
   clip_range: 0.05        # tight constraint to prevent catastrophic collapse
 
   gae_lambda: 0.95
   normalize_advantage: true
 
   ent_coef: 0.01
-  vf_coef: 0.5
+  vf_coef: 0.25           # conservative critic updates — value function diverged in previous run
   target_kl: 0.01         # early stopping threshold (epoch stops if mean approx_kl > 1.5 * target_kl)
+  lstm_num_layers: 1      # n_lstm_layers passed to MlpLstmPolicy policy_kwargs
 
 network:
   type: lstm
   hidden_size: input
-  lstm_num_layers: 2
+  lstm_num_layers: 1
 
 training:
   total_steps: 750000

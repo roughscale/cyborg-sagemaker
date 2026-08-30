@@ -106,6 +106,10 @@ def parse_args():
     parser.add_argument('--prioritized_replay_beta0', type=float, default=0.4,
                        help='PER initial beta (importance sampling correction)')
 
+    # RecurrentPPO specific
+    parser.add_argument('--lstm_num_layers', type=int, default=1,
+                       help='Number of LSTM layers in MlpLstmPolicy')
+
     # PPO specific
     parser.add_argument('--n_steps', type=int, default=1024,
                        help='Number of steps per rollout')

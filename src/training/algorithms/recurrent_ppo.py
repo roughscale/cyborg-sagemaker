@@ -44,21 +44,24 @@ def train_recurrent_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
     logger.info("Initializing Recurrent PPO Agent")
     logger.info("=" * 80)
 
-    # Network architecture (input size, output size)
+    # LSTM hidden size matches observation space — sufficient capacity to encode full temporal state
+    # No post-LSTM MLP — LSTM hidden state maps directly to actor/critic heads
     input_size = env.observation_space.shape[0]
-    net_arch = [input_size, input_size]  # Two hidden layers same size as input
+    net_arch = []
 
     # Learning rate schedule (constant)
     lr_schedule = constant_fn(args.learning_rate)
 
     # Log configuration
+    lstm_num_layers = getattr(args, 'lstm_num_layers', 1)
+
     logger.info(f"Model: RecurrentPPO")
     logger.info(f"Policy: MlpLstmPolicy")
     logger.info("")
     logger.info("Hyperparameters:")
     logger.info(f"  Total Steps: {args.total_steps}")
-    logger.info(f"  Input Size: {input_size}")
-    logger.info(f"  Net Architecture: {net_arch}")
+    logger.info(f"  LSTM Hidden Size: {input_size}")
+    logger.info(f"  LSTM Layers: {lstm_num_layers}")
     logger.info(f"  Gamma: {args.gamma}")
     logger.info(f"  Learning Rate: {args.learning_rate} (constant)")
     logger.info(f"  N Steps: {args.n_steps}")
@@ -107,7 +110,7 @@ def train_recurrent_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
             target_kl=args.target_kl,
             max_grad_norm=0.5,
             tensorboard_log="/opt/ml/output/tensorboard",
-            policy_kwargs={"net_arch": net_arch},
+            policy_kwargs={"net_arch": net_arch, "n_lstm_layers": lstm_num_layers, "lstm_hidden_size": input_size},
             verbose=1,
             seed=args.seed,
             device=args.device,
