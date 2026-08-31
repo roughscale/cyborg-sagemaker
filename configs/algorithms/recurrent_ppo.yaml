@@ -41,7 +41,7 @@ network:
   lstm_num_layers: 2
 
 training:
-  total_steps: 750000
+  total_steps: 1500000
   n_envs: 1
   checkpoint_freq: 10000
   device: auto
