@@ -109,6 +109,8 @@ def parse_args():
     # RecurrentPPO specific
     parser.add_argument('--lstm_num_layers', type=int, default=1,
                        help='Number of LSTM layers in MlpLstmPolicy')
+    parser.add_argument('--clip_range_vf', type=float, default=None,
+                       help='Value function clip range (None = no clipping)')
 
     # PPO specific
     parser.add_argument('--n_steps', type=int, default=1024,

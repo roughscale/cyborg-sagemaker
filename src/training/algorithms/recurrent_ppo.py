@@ -54,6 +54,7 @@ def train_recurrent_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
 
     # Log configuration
     lstm_num_layers = getattr(args, 'lstm_num_layers', 1)
+    clip_range_vf = getattr(args, 'clip_range_vf', None)
 
     logger.info(f"Model: RecurrentPPO")
     logger.info(f"Policy: MlpLstmPolicy")
@@ -73,6 +74,7 @@ def train_recurrent_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
     logger.info(f"  Entropy Coefficient: {args.ent_coef}")
     logger.info(f"  Value Function Coefficient: {args.vf_coef}")
     logger.info(f"  Target KL: {args.target_kl}")
+    logger.info(f"  Clip Range VF: {clip_range_vf}")
     logger.info(f"  Device: {args.device}")
     if args.seed is not None:
         logger.info(f"  Seed: {args.seed}")
@@ -92,6 +94,8 @@ def train_recurrent_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
             verbose=1,
         )
         model.tensorboard_log = "/opt/ml/output/tensorboard"
+        if clip_range_vf is not None:
+            model.clip_range_vf = constant_fn(clip_range_vf)
     else:
         logger.info("Creating Recurrent PPO model...")
         model = RecurrentPPO(
@@ -103,6 +107,7 @@ def train_recurrent_ppo(env, args, callbacks: List[BaseCallback]) -> Any:
             n_epochs=args.n_epochs,
             gamma=args.gamma,
             clip_range=args.clip_range,
+            clip_range_vf=clip_range_vf,
             gae_lambda=args.gae_lambda,
             normalize_advantage=args.normalize_advantage,
             ent_coef=args.ent_coef,

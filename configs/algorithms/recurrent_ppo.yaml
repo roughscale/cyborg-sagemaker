@@ -33,6 +33,7 @@ hyperparameters:
   ent_coef: 0.0
   vf_coef: 1.0
   target_kl: 0.01
+  clip_range_vf: 0.1
   lstm_num_layers: 2
 
 network:
