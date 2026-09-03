@@ -3,7 +3,7 @@
 
 # Environment Configuration
 use_obs_history: false  # RecurrentPPO uses raw partial obs; LSTM handles the POMDP
-randomize_env: false
+randomize_env: true
 max_steps: 1000
 
 max_params:
@@ -33,7 +33,6 @@ hyperparameters:
   ent_coef: 0.0
   vf_coef: 1.0
   target_kl: 0.01
-  clip_range_vf: 0.1
   lstm_num_layers: 2
 
 network:
