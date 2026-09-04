@@ -27,7 +27,7 @@ hyperparameters:
   n_epochs: 5
   clip_range: 0.1
 
-  gae_lambda: 1.0
+  gae_lambda: 0.95
   normalize_advantage: false
 
   ent_coef: 0.0
