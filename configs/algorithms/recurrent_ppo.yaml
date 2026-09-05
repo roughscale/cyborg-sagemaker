@@ -30,7 +30,7 @@ hyperparameters:
   gae_lambda: 0.95
   normalize_advantage: false
 
-  ent_coef: 0.0
+  ent_coef: 0.01
   vf_coef: 1.0
   target_kl: 0.01
   lstm_num_layers: 2
