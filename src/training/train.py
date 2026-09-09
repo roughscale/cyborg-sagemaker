@@ -264,13 +264,16 @@ def main():
     ]
 
     # Add checkpoint callback — timestep_offset ensures absolute step numbers in filenames
-    # after a spot resume (model.num_timesteps resets to 0 on load)
+    # after a spot resume (model.num_timesteps resets to 0 on load).
+    # s3_prefix matches SageMaker's CheckpointConfig S3Uri so both sync mechanisms
+    # write to the same path and every checkpoint is immediately durable in S3.
     s3_bucket = get_s3_bucket()
+    job_name = os.environ.get('SM_TRAINING_JOB_NAME', args.algorithm)
     checkpoint_callback = CheckpointCallback(
         checkpoint_dir=SageMakerPaths.CHECKPOINT_DIR,
         save_freq=args.checkpoint_freq,
         s3_bucket=s3_bucket,
-        s3_prefix=f"checkpoints/{args.algorithm}",
+        s3_prefix=f"checkpoints/{job_name}",
         timestep_offset=completed_timesteps,
         verbose=1
     )

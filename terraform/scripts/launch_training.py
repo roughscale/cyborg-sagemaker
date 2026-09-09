@@ -285,6 +285,7 @@ class SageMakerTrainingLauncher:
         environment_variables = {
             "SCENARIO_NAME": scenario,
             "ENVIRONMENT_MODE": environment_mode,
+            "S3_BUCKET": self.bucket,
         }
 
         # Build training job configuration
