@@ -116,47 +116,65 @@ def train_drqn(env, args, callbacks: List[BaseCallback]) -> Any:
         "lstm_num_layers": len(net_arch)
     }
 
-    # Create DRQN model
-    logger.info("Creating DRQN model...")
-    model = ModelClass(
-        policy=PolicyClass,
-        env=env,
-        learning_rate=lr_schedule,
-        buffer_size=buffer_size,
-        learning_starts=learning_starts,
-        batch_size=args.batch_size,
-        n_prev_seq=args.num_prev_seq,
-        tau=1.0,  # Hard update for target network
-        gamma=args.gamma,
-        train_freq=1,  # Train after every step
-        gradient_steps=1,  # One gradient step per training
-        replay_buffer_class=PrioritizedReplaySequenceBuffer,
-        replay_buffer_kwargs=per_buffer_args,
-        optimize_memory_usage=False,
-        target_update_interval=target_update_interval,
-        exploration_fraction=args.exploration_fraction,
-        exploration_initial_eps=args.initial_epsilon,
-        exploration_final_eps=args.final_epsilon,
-        max_grad_norm=10,  # Gradient clipping
-        tensorboard_log="/opt/ml/output/tensorboard",
-        policy_kwargs={"net_arch": net_arch},
-        verbose=1,
-        seed=args.seed,
-        device=args.device,
-        _init_setup_model=True
-    )
+    resume_checkpoint = getattr(args, 'resume_checkpoint_path', None)
+    completed_timesteps = getattr(args, 'completed_timesteps', 0)
+    remaining_steps = args.total_steps - completed_timesteps
 
-    logger.info("DRQN model created successfully")
+    if resume_checkpoint:
+        logger.info(f"Spot resume detected: checkpoint at step {completed_timesteps}")
+        logger.info(f"  Checkpoint: {resume_checkpoint}")
+        logger.info(f"  Remaining steps: {remaining_steps}")
+        logger.info(f"  Note: replay buffer is not serialized — buffer starts empty, network weights preserved")
+        model = ModelClass.load(
+            resume_checkpoint,
+            env=env,
+            device=args.device,
+            verbose=1,
+        )
+        model.tensorboard_log = "/opt/ml/output/tensorboard"
+    else:
+        logger.info("No checkpoint found — starting fresh training run")
+        logger.info("Creating DRQN model...")
+        model = ModelClass(
+            policy=PolicyClass,
+            env=env,
+            learning_rate=lr_schedule,
+            buffer_size=buffer_size,
+            learning_starts=learning_starts,
+            batch_size=args.batch_size,
+            n_prev_seq=args.num_prev_seq,
+            tau=1.0,  # Hard update for target network
+            gamma=args.gamma,
+            train_freq=1,  # Train after every step
+            gradient_steps=1,  # One gradient step per training
+            replay_buffer_class=PrioritizedReplaySequenceBuffer,
+            replay_buffer_kwargs=per_buffer_args,
+            optimize_memory_usage=False,
+            target_update_interval=target_update_interval,
+            exploration_fraction=args.exploration_fraction,
+            exploration_initial_eps=args.initial_epsilon,
+            exploration_final_eps=args.final_epsilon,
+            max_grad_norm=10,  # Gradient clipping
+            tensorboard_log="/opt/ml/output/tensorboard",
+            policy_kwargs={"net_arch": net_arch},
+            verbose=1,
+            seed=args.seed,
+            device=args.device,
+            _init_setup_model=True
+        )
+
+    logger.info("DRQN model ready")
     logger.info("")
 
     # Train model
-    logger.info(f"Starting training for {args.total_steps} timesteps...")
+    logger.info(f"Starting training for {remaining_steps} timesteps (completed: {completed_timesteps})...")
     logger.info("=" * 80)
 
     model.learn(
-        total_timesteps=args.total_steps,
+        total_timesteps=remaining_steps,
         log_interval=1,  # Log to TensorBoard every episode
-        callback=callbacks
+        callback=callbacks,
+        reset_num_timesteps=resume_checkpoint is None,
     )
 
     logger.info("=" * 80)
