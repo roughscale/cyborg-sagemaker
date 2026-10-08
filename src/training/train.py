@@ -172,6 +172,26 @@ def find_latest_checkpoint(checkpoint_dir: Path) -> Tuple[Optional[Path], int]:
     return latest, completed
 
 
+def read_checkpoint_num_timesteps(checkpoint_path: Path) -> int:
+    """Read model.num_timesteps stored inside an SB3 checkpoint zip.
+
+    SB3 preserves num_timesteps across loads via model.__dict__.update(data).
+    The checkpoint filename encodes the absolute step as (model_local_ts + offset),
+    but the stored num_timesteps is the model's own counter. These diverge across
+    spot resumes, so we read the stored value directly to compute
+    checkpoint_offset = filename_step - model_local_ts.
+    """
+    import zipfile
+    try:
+        with zipfile.ZipFile(str(checkpoint_path)) as z:
+            with z.open('data') as f:
+                data = json.loads(f.read())
+        return int(data.get('num_timesteps', 0))
+    except Exception as e:
+        logger.warning(f"Could not read num_timesteps from checkpoint {checkpoint_path}: {e}")
+        return 0
+
+
 def get_s3_bucket() -> str:
     """Get S3 bucket name from environment or Terraform output.
 
@@ -250,10 +270,19 @@ def main():
     args.resume_checkpoint_path = str(resume_checkpoint_path) if resume_checkpoint_path else None
     args.completed_timesteps = completed_timesteps
 
+    # SB3 preserves model.num_timesteps on load (not a reset to 0). The stored counter
+    # and the checkpoint filename diverge across spot resumes because the filename already
+    # bakes in a prior offset. checkpoint_offset = filename_step - model_local_ts keeps
+    # checkpoint filenames as absolute step numbers without double-counting the offset.
+    model_local_ts = read_checkpoint_num_timesteps(resume_checkpoint_path) if resume_checkpoint_path else 0
+    checkpoint_offset = completed_timesteps - model_local_ts
+
     if resume_checkpoint_path:
         logger.info(f"Spot resume detected: checkpoint at step {completed_timesteps}")
         logger.info(f"  Checkpoint: {resume_checkpoint_path}")
-        logger.info(f"  Remaining steps: {args.total_steps - completed_timesteps}")
+        logger.info(f"  Model internal step: {model_local_ts}")
+        logger.info(f"  Checkpoint offset: {checkpoint_offset}")
+        logger.info(f"  Remaining steps (approx): {args.total_steps - completed_timesteps}")
     else:
         logger.info("No checkpoint found — starting fresh training run")
     logger.info("")
@@ -263,8 +292,7 @@ def main():
         SageMakerCallback(verbose=1)
     ]
 
-    # Add checkpoint callback — timestep_offset ensures absolute step numbers in filenames
-    # after a spot resume (model.num_timesteps resets to 0 on load).
+    # Add checkpoint callback — checkpoint_offset keeps filenames as absolute step numbers.
     # s3_prefix matches SageMaker's CheckpointConfig S3Uri so both sync mechanisms
     # write to the same path and every checkpoint is immediately durable in S3.
     s3_bucket = get_s3_bucket()
@@ -274,7 +302,7 @@ def main():
         save_freq=args.checkpoint_freq,
         s3_bucket=s3_bucket,
         s3_prefix=f"checkpoints/{job_name}",
-        timestep_offset=completed_timesteps,
+        timestep_offset=checkpoint_offset,
         verbose=1
     )
     callbacks.append(checkpoint_callback)

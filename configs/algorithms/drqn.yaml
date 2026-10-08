@@ -54,7 +54,7 @@ network:
 # Training Configuration
 training:
   # These are typically set by Terraform or command line
-  total_steps: 500000  # Total training timesteps
+  total_steps: 1000000  # Total training timesteps
   n_envs: 1            # Number of parallel environments
   checkpoint_freq: 10000  # Save checkpoint every N steps
 

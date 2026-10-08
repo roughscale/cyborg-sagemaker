@@ -118,13 +118,8 @@ def train_drqn(env, args, callbacks: List[BaseCallback]) -> Any:
 
     resume_checkpoint = getattr(args, 'resume_checkpoint_path', None)
     completed_timesteps = getattr(args, 'completed_timesteps', 0)
-    remaining_steps = args.total_steps - completed_timesteps
 
     if resume_checkpoint:
-        logger.info(f"Spot resume detected: checkpoint at step {completed_timesteps}")
-        logger.info(f"  Checkpoint: {resume_checkpoint}")
-        logger.info(f"  Remaining steps: {remaining_steps}")
-        logger.info(f"  Note: replay buffer is not serialized — buffer starts empty, network weights preserved")
         model = ModelClass.load(
             resume_checkpoint,
             env=env,
@@ -132,9 +127,20 @@ def train_drqn(env, args, callbacks: List[BaseCallback]) -> Any:
             verbose=1,
         )
         model.tensorboard_log = "/opt/ml/output/tensorboard"
+        # Use model.num_timesteps (preserved by SB3 load) to compute remaining steps.
+        # SB3's _setup_learn adds model.num_timesteps to total_timesteps when
+        # reset_num_timesteps=False, so remaining = total - model.num_timesteps gives
+        # the correct stop point of total_steps regardless of filename-based offsets.
+        remaining_steps = args.total_steps - model.num_timesteps
+        logger.info(f"Spot resume detected: checkpoint at step {completed_timesteps}")
+        logger.info(f"  Checkpoint: {resume_checkpoint}")
+        logger.info(f"  Model internal step: {model.num_timesteps}")
+        logger.info(f"  Remaining steps: {remaining_steps}")
+        logger.info(f"  Note: replay buffer is not serialized — buffer starts empty, network weights preserved")
     else:
         logger.info("No checkpoint found — starting fresh training run")
         logger.info("Creating DRQN model...")
+        remaining_steps = args.total_steps
         model = ModelClass(
             policy=PolicyClass,
             env=env,
