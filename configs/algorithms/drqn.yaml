@@ -27,7 +27,7 @@ hyperparameters:
   # DQN/DRQN parameters
   batch_size: 32
   initial_epsilon: 1.0
-  final_epsilon: 0.02
+  final_epsilon: 0.05
   exploration_fraction: 0.9
 
   # DRQN-specific parameters
@@ -54,7 +54,7 @@ network:
 # Training Configuration
 training:
   # These are typically set by Terraform or command line
-  total_steps: 1000000  # Total training timesteps
+  total_steps: 1500000  # Total training timesteps
   n_envs: 1            # Number of parallel environments
   checkpoint_freq: 10000  # Save checkpoint every N steps
 
