@@ -345,7 +345,7 @@ class SageMakerTrainingLauncher:
         # Add spot training if enabled
         if enable_spot:
             config["EnableManagedSpotTraining"] = True
-            config["StoppingCondition"]["MaxWaitTimeInSeconds"] = 172800  # 48 hours
+            config["StoppingCondition"]["MaxWaitTimeInSeconds"] = 259200  # 72 hours
 
         # Add VPC config if provided
         if vpc_config:
@@ -471,6 +471,11 @@ Environment Variables:
         help="Additional hyperparameters (can be used multiple times)"
     )
 
+    parser.add_argument(
+        "--job-name",
+        help="Override the full job name (useful when pre-copying checkpoints)"
+    )
+
     return parser.parse_args()
 
 
@@ -532,8 +537,8 @@ def main():
         environment = get_terraform_output("environment", terraform_dir) or "research"
         job_prefix = f"{project_name}-{environment}"
 
-    # Generate job name
-    job_name = generate_job_name(args.algorithm, job_prefix)
+    # Generate job name (or use override)
+    job_name = args.job_name if args.job_name else generate_job_name(args.algorithm, job_prefix)
 
     # Get VPC config if AWS emulation mode
     vpc_config = None

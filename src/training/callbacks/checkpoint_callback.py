@@ -1,7 +1,9 @@
 """Checkpoint callback with S3 sync for model checkpointing."""
 
 import os
+import json
 import logging
+import zipfile
 from pathlib import Path
 from typing import Optional
 from stable_baselines3.common.callbacks import BaseCallback
@@ -73,6 +75,7 @@ class CheckpointCallback(BaseCallback):
 
             # Save model
             self.model.save(str(checkpoint_path))
+            self._save_per_metadata(checkpoint_path)
             self.checkpoints_saved += 1
 
             # Sync to S3 if configured
@@ -126,6 +129,27 @@ class CheckpointCallback(BaseCallback):
             logger.error(f"Failed to upload checkpoint to S3: {e}")
             return False
 
+    def _save_per_metadata(self, checkpoint_path: Path) -> None:
+        """Embed PER buffer state into the checkpoint zip.
+
+        Saves max_priority and _current_progress_remaining so a spot-resume
+        can restore the buffer to its correct state without the beta/priority jump
+        that occurs when the buffer is recreated from scratch.
+        """
+        buf = getattr(self.model, 'replay_buffer', None)
+        if buf is None or not hasattr(buf, 'max_priority'):
+            return
+        metadata = {
+            'max_priority': float(buf.max_priority),
+            '_current_progress_remaining': float(buf._current_progress_remaining),
+        }
+        try:
+            with zipfile.ZipFile(str(checkpoint_path), 'a') as zf:
+                zf.writestr('per_metadata', json.dumps(metadata))
+            logger.info(f"  PER metadata saved: max_priority={metadata['max_priority']:.6f}, progress_remaining={metadata['_current_progress_remaining']:.4f}")
+        except Exception as e:
+            logger.warning(f"Could not save PER metadata to {checkpoint_path}: {e}")
+
     def _on_training_end(self) -> bool:
         """Save final checkpoint at end of training.
 
@@ -139,6 +163,7 @@ class CheckpointCallback(BaseCallback):
         logger.info(f"  Path: {final_checkpoint_path}")
 
         self.model.save(str(final_checkpoint_path))
+        self._save_per_metadata(final_checkpoint_path)
 
         # Sync to S3 if configured
         if self.s3_client and self.s3_bucket:

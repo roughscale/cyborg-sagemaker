@@ -1,7 +1,9 @@
 """DRQN training implementation for SageMaker."""
 
+import json
 import logging
-from typing import List, Any
+import zipfile
+from typing import List, Any, Optional
 from stable_baselines3.common.utils import constant_fn
 from stable_baselines3.common.callbacks import BaseCallback
 from sb3_contrib.drqn.drqn import DeepRecurrentQNetwork, DoubleDRQN
@@ -10,6 +12,17 @@ from sb3_contrib.drqn.dueling_policies import DuelingDRQNPolicy
 from sb3_contrib.per.prioritized_replay_sequence_buffer import PrioritizedReplaySequenceBuffer
 
 logger = logging.getLogger(__name__)
+
+
+def _read_per_metadata(checkpoint_path: str) -> Optional[dict]:
+    """Read PER buffer state embedded in an SB3 checkpoint zip."""
+    try:
+        with zipfile.ZipFile(checkpoint_path) as zf:
+            if 'per_metadata' in zf.namelist():
+                return json.loads(zf.read('per_metadata'))
+    except Exception as e:
+        logger.warning(f"Could not read PER metadata from {checkpoint_path}: {e}")
+    return None
 
 
 def train_drqn(env, args, callbacks: List[BaseCallback]) -> Any:
@@ -137,6 +150,24 @@ def train_drqn(env, args, callbacks: List[BaseCallback]) -> Any:
         logger.info(f"  Model internal step: {model.num_timesteps}")
         logger.info(f"  Remaining steps: {remaining_steps}")
         logger.info(f"  Note: replay buffer is not serialized — buffer starts empty, network weights preserved")
+
+        # Restore PER buffer state to avoid the beta/priority jump that occurs when
+        # the buffer is recreated from scratch.  Without this fix, _current_progress_remaining
+        # resets to 1.0 (beta=0.4) and then immediately jumps to the global progress value
+        # (e.g. ~0.12 → beta≈0.93) on the first update_priorities call, destabilising training.
+        per_meta = _read_per_metadata(resume_checkpoint)
+        if per_meta and hasattr(model, 'replay_buffer') and hasattr(model.replay_buffer, 'max_priority'):
+            model.replay_buffer.max_priority = per_meta['max_priority']
+            # _current_progress_remaining is 1 - num_timesteps/total_steps globally.
+            # SB3's _setup_learn adjusts total_timesteps by += num_timesteps when
+            # reset_num_timesteps=False, so the model's internal progress_remaining
+            # is computed against args.total_steps, not remaining_steps.
+            progress_remaining = max(0.0, 1.0 - model.num_timesteps / args.total_steps)
+            model.replay_buffer._current_progress_remaining = progress_remaining
+            logger.info(f"  PER state restored: max_priority={per_meta['max_priority']:.6f}, "
+                        f"progress_remaining={progress_remaining:.4f} (beta≈{model.replay_buffer.beta:.4f})")
+        else:
+            logger.warning("  No PER metadata in checkpoint — buffer state not restored (expect beta jump on first update)")
     else:
         logger.info("No checkpoint found — starting fresh training run")
         logger.info("Creating DRQN model...")
